@@ -1,0 +1,56 @@
+import * as THREE from "three";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+import { ModelLoadError } from "./errors";
+
+export interface LoadModelOptions {
+  /** Where the Draco decoder lives (copy three/examples/jsm/libs/draco/gltf there). Default "/draco/". */
+  dracoPath?: string;
+  onProgress?: (fraction: number) => void;
+  signal?: AbortSignal;
+  /** Fail if loading takes longer than this. Default 20 s. */
+  timeoutMs?: number;
+}
+
+let sharedGltf: GLTFLoader | null = null;
+let sharedDracoPath = "";
+
+function getLoader(dracoPath: string): GLTFLoader {
+  if (sharedGltf && sharedDracoPath === dracoPath) return sharedGltf;
+  const draco = new DRACOLoader();
+  draco.setDecoderPath(dracoPath);
+  const loader = new GLTFLoader();
+  loader.setDRACOLoader(draco);
+  loader.setMeshoptDecoder(MeshoptDecoder);
+  sharedGltf = loader;
+  sharedDracoPath = dracoPath;
+  return loader;
+}
+
+export interface LoadedModel {
+  object: THREE.Object3D;
+  animations: THREE.AnimationClip[];
+}
+
+/** Load a GLB/GLTF with Draco and Meshopt support. Throws ModelLoadError for any failure. */
+export async function loadGltf(url: string, opts: LoadModelOptions = {}): Promise<LoadedModel> {
+  const loader = getLoader(opts.dracoPath ?? "/draco/");
+  const timeout = opts.timeoutMs ?? 20000;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const load = loader.loadAsync(url, (e) => {
+      if (e.lengthComputable && e.total > 0) opts.onProgress?.(e.loaded / e.total);
+    });
+    const timed = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`timed out after ${timeout} ms`)), timeout);
+      opts.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+    });
+    const gltf = await Promise.race([load, timed]);
+    return { object: gltf.scene, animations: gltf.animations };
+  } catch (e) {
+    throw new ModelLoadError(url, e);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
