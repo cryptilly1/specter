@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Verify hotspot and chip content on save",
+      "trigger": "PostFileSave",
+      "description": "When pack, apartment or lantern content is saved, check every hotspot target resolves (with title and body), every demo chip parses and applies, and every camera path is valid. Keeps the demo from breaking.",
+      "matcher": "apps/(learnforge/src/packs|haunthouse-walk/src/(content|apartment)|crypt-forge/src/lantern)[^ ]*\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "pnpm vitest run tests/unit/content.test.ts",
+        "timeout": 120
+      }
+    }
+  ]
+}

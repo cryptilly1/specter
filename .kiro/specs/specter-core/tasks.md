@@ -1,9 +1,20 @@
-# Tasks: specter-core and specter-voice
+# Tasks: Specter (all specs)
 
-- [x] 1. Repo, tooling, steering, MCP template
-- [ ] 2. Core scene, loader, lighting, dispose (R1)
-- [ ] 3. Hotspots, notes, materials, visibility (R2, R3)
-- [ ] 4. specter-voice registry, schema, parser, applySpec, undo (R4)
-- [ ] 5. /api/spec adapter and fallback chain (R5, R8)
-- [ ] 6. Camera path player (R6)
-- [ ] 7. Budget checker and model pipeline (R7)
+- [x] 1. Repo, tooling, steering, MCP config template
+- [x] 2. Core scene, loader, lighting, dispose (R1)
+- [x] 3. Hotspots, notes, materials, visibility (R2, R3)
+- [x] 4. specter-voice registry, schema, parser, applySpec, undo (R4)
+- [x] 5. LearnForge with cell, solar system and DNA packs (learnforge R1, R2)
+- [x] 6. Command bar, confirm step, chips, undo (learnforge R3)
+- [x] 7. /api/spec adapter and fallback chain: Groq, OpenAI, Anthropic, local parser (R5, R8)
+- [x] 8. Voice input with language selector
+- [x] 9. Read-aloud narration
+- [x] 10. Camera path player with holds (R6)
+- [x] 11. HauntHouse Walk with procedural apartment (haunthouse-walk R1, R2)
+- [x] 12. Model pipeline: audit, optimize, sidecar config, optional GLB and splat scene (R7, haunthouse-walk R3)
+- [x] 13. specter-viewer web component, specter-r3f adapter, share links, voice-todo example (learnforge R4)
+- [x] 14. Vercel config, bundled serverless functions, Playwright suite
+- [x] 15. Crypt Forge (crypt-forge R1-R5)
+- [x] 16. Hooks, agents, power, PBT log
+- [ ] 17. Deploy to Vercel and run the Playwright suite against the live URLs (needs `vercel login`)
+- [ ] 18. Record video, write-up, submit

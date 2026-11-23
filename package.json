@@ -18,6 +18,7 @@
     "models:optimize": "node scripts/optimize-model.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.65.1",
     "@types/node": "^22.10.0",
     "fast-check": "^4.11.0",

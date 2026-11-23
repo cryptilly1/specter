@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Keep README and write-up in sync with the apps",
+      "trigger": "PostFileSave",
+      "description": "When an app's main component or content changes, check the README feature list, the chips shown in docs/DEMO-SCRIPT.md and the app descriptions still match, and update them if not.",
+      "matcher": "apps/[^/]+/src/(App\\.tsx|content\\.ts|packs/index\\.ts|lantern\\.ts)$",
+      "action": {
+        "type": "agent",
+        "prompt": "An app's main component or content file was just saved. Compare it with README.md and docs/DEMO-SCRIPT.md. If a feature, command chip, room name, subject pack or URL listed there no longer matches the code, update the docs with the smallest accurate change. Do not change code. If nothing is out of date, say so in one line."
+      }
+    }
+  ]
+}
