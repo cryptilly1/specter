@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>voice-todo · specter-voice without 3D</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; background: #0b0813; color: #f3eefc; max-width: 560px; margin: 32px auto; padding: 0 16px; }
+      h1 { font-size: 22px; margin-bottom: 4px; }
+      p.sub { color: #b3a8cc; margin-top: 0; }
+      ul { list-style: none; padding: 0; }
+      li { padding: 8px 10px; border: 1px solid #ffffff22; border-radius: 10px; margin-bottom: 6px; display: flex; gap: 8px; }
+      li.done span { text-decoration: line-through; color: #8f84a8; }
+      form { display: flex; gap: 8px; margin: 14px 0; }
+      input { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #ffffff33; background: #ffffff12; color: inherit; font: inherit; }
+      button { padding: 10px 14px; border-radius: 10px; border: 1px solid #ffffff33; background: #ffffff18; color: inherit; font: inherit; cursor: pointer; }
+      button.primary { background: #ff8a4c; color: #2a1000; border: 0; font-weight: 650; }
+      #preview, #err { padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; }
+      #preview { background: #8b5cf622; border: 1px solid #8b5cf688; }
+      #err { background: #f8717122; border: 1px solid #f8717188; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <h1>voice-todo</h1>
+    <p class="sub">The same Voice → validated Spec → apply pipeline as the 3D apps, with zero Three.js. Try “add buy milk”, “complete buy milk”, “remove buy milk”.</p>
+    <div id="err" role="alert" hidden></div>
+    <div id="preview" hidden>
+      <strong>Apply these changes?</strong>
+      <ul id="lines"></ul>
+      <button class="primary" id="apply">Apply</button> <button id="cancel">Cancel</button>
+    </div>
+    <ul id="list" aria-label="To-do list"></ul>
+    <form id="form">
+      <button type="button" id="mic" aria-label="Speak a command" hidden>🎙</button>
+      <input id="input" placeholder="Say or type: add buy milk" aria-label="Command" autocomplete="off" />
+      <button class="primary" type="submit">Preview</button>
+    </form>
+    <button id="undo" disabled>↶ Undo</button>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

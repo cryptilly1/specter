@@ -7,7 +7,7 @@
   "scripts": {
     "predev": "node ../../scripts/copy-draco.mjs",
     "dev": "vite",
-    "prebuild": "node ../../scripts/copy-draco.mjs",
+    "prebuild": "node ../../scripts/copy-draco.mjs && node ../../scripts/copy-viewer.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },

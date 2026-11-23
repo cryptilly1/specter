@@ -1,0 +1,28 @@
+{
+  "name": "specter-r3f",
+  "version": "0.1.0",
+  "description": "Thin React Three Fiber adapter: apply Specter specs (hotspots, materials, visibility, notes) to an R3F scene.",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "build": "tsc --noEmit -p tsconfig.json" },
+  "dependencies": {
+    "specter-core": "workspace:*",
+    "specter-voice": "workspace:*"
+  },
+  "peerDependencies": {
+    "@react-three/fiber": "^9.0.0",
+    "react": "^19.0.0",
+    "three": ">=0.170.0"
+  },
+  "devDependencies": {
+    "@react-three/fiber": "^9.8.2",
+    "@types/react": "^19.0.0",
+    "@types/three": "^0.187.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "three": "^0.187.0"
+  }
+}

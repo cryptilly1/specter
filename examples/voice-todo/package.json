@@ -1,0 +1,20 @@
+{
+  "name": "voice-todo",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "specter-voice with no 3D at all: a to-do list you control by voice or text.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build"
+  },
+  "dependencies": {
+    "specter-voice": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^8.3.8"
+  }
+}

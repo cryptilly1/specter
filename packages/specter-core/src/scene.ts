@@ -406,7 +406,7 @@ export class SpecterScene {
     const box = new THREE.Box3().setFromObject(this.modelSlot);
     if (box.isEmpty()) return;
     const sphere = box.getBoundingSphere(new THREE.Sphere());
-    const dist = sphere.radius / Math.sin(THREE.MathUtils.degToRad(this.camera.fov / 2)) * 0.9;
+    const dist = sphere.radius / Math.sin(THREE.MathUtils.degToRad(this.camera.fov / 2)) * 1.4;
     const dir = new THREE.Vector3(0.6, 0.45, 1).normalize();
     const pos = sphere.center.clone().add(dir.multiplyScalar(dist));
     this.home = { position: [pos.x, pos.y, pos.z], target: [sphere.center.x, sphere.center.y, sphere.center.z] };

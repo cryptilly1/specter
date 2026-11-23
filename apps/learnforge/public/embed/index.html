@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>&lt;specter-viewer&gt; embed demo</title>
+    <style>
+      body { font: 16px/1.6 system-ui, sans-serif; max-width: 760px; margin: 32px auto; padding: 0 16px; color: #1c1530; }
+      specter-viewer { height: 420px; border-radius: 14px; overflow: hidden; margin: 16px 0; }
+      pre { background: #f3effa; padding: 14px; border-radius: 10px; overflow: auto; font-size: 13px; }
+      button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #b9a8e6; background: #fff; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <h1>&lt;specter-viewer&gt;</h1>
+    <p>A plain HTML page, no build step and no Three.js knowledge. The element loads a model, shows hotspots, and accepts a Specter Spec made by voice or text.</p>
+
+    <specter-viewer
+      id="v"
+      lighting="studio"
+      quality="standard"
+      hotspots='[{"mesh":"block","title":"A hotspot","body":"Hotspots are defined in HTML. Click the marker or the block."}]'
+    ></specter-viewer>
+
+    <p><button id="paint">Apply a Spec: paint the block gold</button></p>
+
+<pre>&lt;script type="module" src="/embed/specter-viewer.js"&gt;&lt;/script&gt;
+&lt;specter-viewer src="model.glb"
+  hotspots='[{"mesh":"door","title":"Front door","body":"Solid oak."}]'&gt;&lt;/specter-viewer&gt;</pre>
+
+    <script type="module" src="./specter-viewer.js"></script>
+    <script type="module">
+      const v = document.getElementById("v");
+      document.getElementById("paint").addEventListener("click", async () => {
+        const r = await v.applySpec({ version: 1, ops: [{ op: "setMaterial", mesh: "block", color: "#d4a017" }] });
+        if (!r.ok) alert(r.errors.join("\n"));
+      });
+    </script>
+  </body>
+</html>

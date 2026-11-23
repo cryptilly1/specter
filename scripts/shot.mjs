@@ -16,6 +16,7 @@ if (opt.click) { for (const sel of opt.click.split("||")) { await page.click(sel
 if (opt.type) { const [sel, text] = opt.type.split("::"); await page.fill(sel, text); await page.waitForTimeout(300); }
 if (opt.press) { await page.keyboard.press(opt.press); await page.waitForTimeout(1500); }
 if (opt.click2) { for (const sel of opt.click2.split("||")) { await page.click(sel); await page.waitForTimeout(1500); } }
+if (opt.after) await page.waitForTimeout(Number(opt.after));
 await page.screenshot({ path: out });
 console.log(logs.length ? logs.join("\n") : "no console errors");
 await browser.close();

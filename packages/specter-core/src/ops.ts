@@ -1,7 +1,7 @@
 import { OpRegistry, type UndoFn } from "specter-voice";
 import { TargetNotFoundError } from "./errors";
 import { setVisibility } from "./materials";
-import type { SpecterScene } from "./scene";
+import type { SpecterHost } from "./host";
 import { humanize } from "specter-voice";
 
 export interface CoreOpHooks {
@@ -21,8 +21,8 @@ function genId(prefix: string, ...parts: (string | undefined)[]): string {
  * Create an op registry whose core ops are bound to a SpecterScene. Pass the scene as the apply context
  * (`createCommandController({ registry, ctx: scene, ... })`).
  */
-export function createSpecterRegistry(hooks: CoreOpHooks = {}): OpRegistry<SpecterScene> {
-  const reg = new OpRegistry<SpecterScene>();
+export function createSpecterRegistry(hooks: CoreOpHooks = {}): OpRegistry<SpecterHost> {
+  const reg = new OpRegistry<SpecterHost>();
 
   reg.bind("addHotspot", (scene, op) => {
     const id = op.id ?? genId("hs", op.mesh, op.title);

@@ -8,6 +8,8 @@ export interface Keyframe {
   label?: string;
   /** Time in seconds from the start of the path. Must be strictly increasing. */
   t: number;
+  /** Seconds to rest when playback reaches this keyframe (room cards need reading time). */
+  hold?: number;
   position: [number, number, number];
   target: [number, number, number];
 }
@@ -101,6 +103,7 @@ export class PathPlayer {
   /** When set, playback stops on arrival (jump to a room). */
   private stopAt: number | null = null;
   private jump: { from: number; to: number; elapsed: number; dur: number } | null = null;
+  private holdLeft = 0;
 
   constructor(
     readonly path: CameraPath,
@@ -130,17 +133,20 @@ export class PathPlayer {
     if (this.time >= this.path.duration - 1e-6) this.time = this.path.startTime;
     this.stopAt = null;
     this.jump = null;
+    this.holdLeft = 0;
     this.setPlaying(true);
   }
 
   pause(): void {
     this.jump = null;
+    this.holdLeft = 0;
     this.setPlaying(false);
   }
 
   /** Scrub to an exact time and pause. */
   seek(t: number): void {
     this.jump = null;
+    this.holdLeft = 0;
     this.time = Math.max(this.path.startTime, Math.min(this.path.duration, t));
     this.setPlaying(false);
     this.applyAt(this.time);
@@ -174,7 +180,21 @@ export class PathPlayer {
       }
       return;
     }
+    if (this.holdLeft > 0) {
+      this.holdLeft -= dt;
+      return;
+    }
+    const before = this.path.indexAt(this.time);
     this.time += dt * this.speed;
+    const after = this.path.indexAt(this.time);
+    const reached = this.path.keyframes[after];
+    if (after > before && reached?.hold && this.time < this.path.duration) {
+      // arrived at a room: stop on the keyframe exactly and rest
+      this.time = reached.t;
+      this.holdLeft = reached.hold;
+      this.applyAt(this.time);
+      return;
+    }
     if (this.time >= this.path.duration) {
       if (this.loop) this.time = this.path.startTime;
       else {

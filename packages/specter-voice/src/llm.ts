@@ -22,13 +22,13 @@ export function slimContext(ctx: SpecContext): SpecContext {
 export function buildSystemPrompt(ctx: SpecContext, registry: OpRegistry<any>, lang?: string): string {
   const allowed = (ctx.ops && ctx.ops.length ? ctx.ops : registry.names()).filter((n) => registry.has(n));
   const lines = [
-    `You translate a user's spoken or typed request into JSON edit operations for a 3D web app called "${ctx.app}"${ctx.subject ? ` (${ctx.subject})` : ""}.`,
+    `You translate a user's spoken or typed request into JSON edit operations for an interactive web app called "${ctx.app}"${ctx.subject ? ` (${ctx.subject})` : ""}.`,
     `Reply with ONE JSON object and nothing else: {"version":1,"ops":[ ... ]}.`,
     `Allowed ops (use exactly these shapes):`,
     ...registry.docs(allowed).map((d) => `- ${d}`),
     ``,
     `Targets you may reference. Never invent others:`,
-    `- meshes: ${JSON.stringify(ctx.meshes)}`,
+    `- meshes / items: ${JSON.stringify(ctx.meshes)}`,
     `- existing hotspots: ${JSON.stringify(ctx.hotspots.map((h) => ({ id: h.id, mesh: h.mesh, title: h.title })))}`,
     `- packs: ${JSON.stringify(ctx.packs)}`,
     `- camera presets: ${JSON.stringify(ctx.cameraPresets)}`,

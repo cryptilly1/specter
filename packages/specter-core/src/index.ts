@@ -8,5 +8,6 @@ export * from "./lighting";
 export * from "./loader";
 export * from "./budget";
 export * from "./scene";
+export * from "./host";
 export * from "./ops";
 export * from "./procedural";

@@ -1,5 +1,5 @@
 import { slimContext } from "./llm";
-import { parseCommand } from "./parser";
+import { parseCommand, type ParseOutcome } from "./parser";
 import { OpRegistry } from "./registry";
 import type { InterpretSource, Spec, SpecContext } from "./types";
 
@@ -12,6 +12,8 @@ export interface InterpretOptions {
   registry?: OpRegistry<any>;
   /** Skip the LLM entirely (offline mode, tests, demo mode). */
   localOnly?: boolean;
+  /** Offline parser for apps with their own ops. Defaults to the built-in scene parser. */
+  localParser?: (text: string, ctx: SpecContext, registry: OpRegistry<any>) => ParseOutcome;
   /** BCP-47 language code of the user's input, e.g. "es-ES". */
   lang?: string;
 }
@@ -65,7 +67,7 @@ export async function interpret(text: string, ctx: SpecContext, opts: InterpretO
     }
   }
 
-  const local = parseCommand(clean, ctx, registry);
+  const local = (opts.localParser ?? parseCommand)(clean, ctx, registry);
   if (local.spec) {
     // partial success: apply what was understood and tell the user about the rest
     return { ok: true, spec: local.spec, source: "local", warnings: [...warnings, ...local.warnings, ...local.errors] };
