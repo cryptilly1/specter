@@ -1,0 +1,9 @@
+.cf-swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.cf-swatch { aspect-ratio: 1; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.2); cursor: pointer; transition: transform 0.12s, border-color 0.12s; }
+.cf-swatch:hover { transform: translateY(-1px); border-color: rgba(255, 255, 255, 0.6); }
+.cf-swatch[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 3px rgba(255, 138, 76, 0.7); }
+.cf-swatch:focus-visible { outline: 3px solid #8ab4ff; outline-offset: 2px; }
+.sp-embed .sp-header, .sp-embed .sp-side { display: none; }
+.sp-embed .sp-main { grid-template-columns: 1fr; }
+.sp-embed { grid-template-rows: 1fr; }
+.lf-demo { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.5); color: #fde68a; }

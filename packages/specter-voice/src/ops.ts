@@ -114,6 +114,8 @@ export const CORE_OP_NAMES = [
   "setVisibility",
 ] as const;
 
+const nice = (id: unknown): string => String(id ?? "").replace(/[_-]+/g, " ");
+
 /** Op metadata shared by the registry, the parser and the LLM prompt. Schemas live here so the server and client validate identically. */
 export interface CoreOpMeta {
   name: (typeof CORE_OP_NAMES)[number];
@@ -127,7 +129,7 @@ export const coreOpMeta: CoreOpMeta[] = [
     name: "addHotspot",
     schema: addHotspotSchema as z.ZodType<CoreOp>,
     doc: '{"op":"addHotspot","mesh":"<mesh id>","title":"<short title>","body":"<1-3 sentence explanation>"}',
-    describe: (o: AddHotspotOp) => `Add hotspot "${o.title}" on ${o.mesh ?? "a point"}`,
+    describe: (o: AddHotspotOp) => `Add hotspot "${o.title}" on ${o.mesh ? nice(o.mesh) : "a point"}`,
   },
   {
     name: "updateHotspot",
@@ -152,31 +154,31 @@ export const coreOpMeta: CoreOpMeta[] = [
       if (o.roughness !== undefined) bits.push(`roughness ${o.roughness}`);
       if (o.metalness !== undefined) bits.push(`metalness ${o.metalness}`);
       if (o.opacity !== undefined) bits.push(`opacity ${o.opacity}`);
-      return `Change ${o.mesh}: ${bits.join(", ")}`;
+      return `Change ${nice(o.mesh)}: ${bits.join(", ")}`;
     },
   },
   {
     name: "addNote",
     schema: addNoteSchema as z.ZodType<CoreOp>,
     doc: '{"op":"addNote","mesh":"<mesh id>","text":"<note text>"}',
-    describe: (o: AddNoteOp) => `Add note on ${o.mesh ?? "a point"}: "${o.text}"`,
+    describe: (o: AddNoteOp) => `Add note on ${o.mesh ? nice(o.mesh) : "a point"}: "${o.text}"`,
   },
   {
     name: "setCamera",
     schema: setCameraSchema as z.ZodType<CoreOp>,
     doc: '{"op":"setCamera","to":"<camera preset or room id>","mode":"orbit|path (optional)"}',
-    describe: (o: SetCameraOp) => `Move camera${o.to ? ` to ${o.to}` : ""}${o.mode ? ` (${o.mode})` : ""}`,
+    describe: (o: SetCameraOp) => `Move camera${o.to ? ` to ${nice(o.to)}` : ""}${o.mode ? ` (${o.mode})` : ""}`,
   },
   {
     name: "loadPack",
     schema: loadPackSchema as z.ZodType<CoreOp>,
     doc: '{"op":"loadPack","pack":"<pack id>"}',
-    describe: (o: LoadPackOp) => `Switch to the "${o.pack}" pack`,
+    describe: (o: LoadPackOp) => `Switch to the "${nice(o.pack)}" pack`,
   },
   {
     name: "setVisibility",
     schema: setVisibilitySchema as z.ZodType<CoreOp>,
     doc: '{"op":"setVisibility","mesh":"<mesh id>","visible":true|false}',
-    describe: (o: SetVisibilityOp) => `${o.visible ? "Show" : "Hide"} ${o.mesh}`,
+    describe: (o: SetVisibilityOp) => `${o.visible ? "Show" : "Hide"} ${nice(o.mesh)}`,
   },
 ];

@@ -22,6 +22,8 @@ export function SpecterCanvas({ options, onReady, onDispose, className }: Specte
     const el = host.current;
     if (!el) return;
     const scene = createSpecterScene(el, opts.current);
+    // `?debug=1` exposes the scene for automated tests and demos
+    if (new URLSearchParams(location.search).has("debug")) (window as unknown as { __specter?: unknown }).__specter = scene;
     let cancelled = false;
     Promise.resolve(ready.current(scene)).catch((e) => {
       if (!cancelled) scene.toast(e instanceof Error ? e.message : "Something went wrong while loading the scene.");
