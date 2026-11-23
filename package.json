@@ -1,0 +1,26 @@
+{
+  "name": "specter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Specter: voice/text-authorable 3D experience kit. Voice -> validated Spec -> Scene.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r --filter './packages/*' build",
+    "dev:learnforge": "pnpm --filter learnforge dev",
+    "dev:walk": "pnpm --filter haunthouse-walk dev",
+    "dev:forge": "pnpm --filter crypt-forge dev",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^22.10.0",
+    "fast-check": "^4.11.0",
+    "jsdom": "^31.0.1",
+    "typescript": "~5.9.3",
+    "vitest": "^5.1.1"
+  }
+}
