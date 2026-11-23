@@ -10,7 +10,7 @@ import { checkBudget, measureScene, type Budget, type SceneMetrics, DEFAULT_BUDG
 import { CameraPath, PathPlayer, type Keyframe, type PathPlayerEvents } from "./camera-path";
 import { disposeObject3D } from "./dispose";
 import { TargetNotFoundError } from "./errors";
-import { listTargets } from "./find";
+import { findByName, listTargets } from "./find";
 import { HotspotManager, injectStyles, type Hotspot } from "./hotspots";
 import { createLightingRig, createRoomEnvironment, disposeRig, loadHdriEnvironment, type EnvironmentHandle, type LightingPreset, type LightingRig } from "./lighting";
 import { loadGltf, type LoadModelOptions } from "./loader";
@@ -138,9 +138,9 @@ export class SpecterScene {
       const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0;
+      renderer.toneMappingExposure = 0.85;
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
       container.appendChild(renderer.domElement);
       renderer.domElement.setAttribute("role", "img");
       renderer.domElement.setAttribute("aria-label", "Interactive 3D scene. Drag to orbit, scroll to zoom.");
@@ -304,7 +304,7 @@ export class SpecterScene {
         const gtao = new GTAOPass(this.scene, this.camera, size.x || 512, size.y || 512);
         gtao.output = GTAOPass.OUTPUT.Default;
         composer.addPass(gtao);
-        composer.addPass(new UnrealBloomPass(new THREE.Vector2(size.x || 512, size.y || 512), 0.28, 0.7, 0.92));
+        composer.addPass(new UnrealBloomPass(new THREE.Vector2(size.x || 512, size.y || 512), 0.16, 0.6, 1.25));
         composer.addPass(new OutputPass());
         this.composer = composer;
         this.resize();
@@ -480,6 +480,30 @@ export class SpecterScene {
 
   resetView(): void {
     this.flyTo(this.home, 1.0);
+  }
+
+  /** The home view (the framing after the last model fit or `setHome`). */
+  getHome(): CameraView {
+    return this.home;
+  }
+
+  setHome(view: CameraView): void {
+    this.home = view;
+  }
+
+  /** Fly the camera so a named mesh or group fills the view, keeping the current viewing direction. */
+  focusMesh(name: string, closeness = 2.2, seconds = 1.1): void {
+    const obj = findByName(this.modelSlot, name);
+    if (!obj) throw new TargetNotFoundError(name, "mesh");
+    const sphere = new THREE.Box3().setFromObject(obj).getBoundingSphere(new THREE.Sphere());
+    const target = sphere.center.clone();
+    const dist = Math.max(0.8, (sphere.radius / Math.sin(THREE.MathUtils.degToRad(this.camera.fov / 2))) * closeness * 0.55);
+    const from = this.controls?.target ?? new THREE.Vector3();
+    const dir = this.camera.position.clone().sub(from);
+    if (dir.lengthSq() < 1e-6) dir.set(0.4, 0.3, 1);
+    dir.normalize().multiplyScalar(dist);
+    const pos = target.clone().add(dir);
+    this.flyTo({ position: [pos.x, pos.y, pos.z], target: [target.x, target.y, target.z] }, seconds);
   }
 
   /** Install a camera path. The previous one is replaced. */

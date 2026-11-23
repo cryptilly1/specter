@@ -20,7 +20,7 @@ export function createLightingRig(preset: LightingPreset, shadows: boolean): Lig
 
   if (preset === "studio") {
     group.add(new THREE.HemisphereLight(0xdfe8ff, 0x20202a, 0.35));
-    key = new THREE.DirectionalLight(0xfff1e0, 2.4);
+    key = new THREE.DirectionalLight(0xfff1e0, 1.7);
     key.position.set(5, 8, 6);
     const fill = new THREE.DirectionalLight(0x9db8ff, 0.7);
     fill.position.set(-6, 3, 2);

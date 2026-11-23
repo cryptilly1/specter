@@ -10,6 +10,8 @@ export interface HotspotInput {
   mesh?: string;
   /** World position to anchor to when no mesh is given. */
   position?: [number, number, number];
+  /** World-space offset added to a mesh anchor, to keep markers from overlapping. */
+  offset?: [number, number, number];
   title: string;
   body: string;
 }
@@ -31,7 +33,7 @@ const CSS = `
 .specter-marker[data-hidden="true"]{opacity:0;pointer-events:none}
 @keyframes specter-pulse{0%{box-shadow:0 0 0 0 rgba(255,140,60,.55),0 2px 10px rgba(0,0,0,.45)}70%{box-shadow:0 0 0 14px rgba(255,140,60,0),0 2px 10px rgba(0,0,0,.45)}100%{box-shadow:0 0 0 0 rgba(255,140,60,0),0 2px 10px rgba(0,0,0,.45)}}
 @media (prefers-reduced-motion:reduce){.specter-marker{animation:none}}
-.specter-panel{position:absolute;left:16px;bottom:16px;max-width:min(380px,calc(100% - 32px));padding:14px 16px 14px;border-radius:14px;background:rgba(18,14,28,.92);color:#f3eefc;box-shadow:0 10px 40px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);pointer-events:auto;font:14px/1.5 system-ui,-apple-system,sans-serif;backdrop-filter:blur(8px)}
+.specter-panel{position:absolute;left:16px;top:16px;max-width:min(380px,calc(100% - 32px));padding:14px 16px 14px;border-radius:14px;background:rgba(18,14,28,.92);color:#f3eefc;box-shadow:0 10px 40px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);pointer-events:auto;font:14px/1.5 system-ui,-apple-system,sans-serif;backdrop-filter:blur(8px)}
 .specter-panel[hidden]{display:none}
 .specter-panel h3{margin:0 28px 6px 0;font-size:16px;font-weight:650}
 .specter-panel p{margin:0 0 10px;color:#d9d0ec}
@@ -96,7 +98,9 @@ export class HotspotManager {
     if (input.mesh) {
       const obj = findByName(this.opts.root, input.mesh);
       if (!obj) throw new TargetNotFoundError(input.mesh, "mesh");
-      return worldCenter(obj);
+      const c = worldCenter(obj);
+      if (input.offset) c.add(this.tmp.set(...input.offset));
+      return c;
     }
     if (input.position) return new THREE.Vector3(...input.position);
     throw new TargetNotFoundError("(no target given)", "mesh");
@@ -105,8 +109,18 @@ export class HotspotManager {
   add(input: HotspotInput): { hotspot: Hotspot; previous: Hotspot | undefined } {
     if (!input.id) throw new Error("Hotspot needs an id");
     if (!input.title?.trim() || !input.body?.trim()) throw new Error(`Hotspot "${input.id}" needs a title and a body`);
-    const anchor = this.resolveAnchor(input); // throws before any DOM is touched
     const kind = input.kind ?? "hotspot";
+    // keep several markers on one mesh from stacking exactly on top of each other
+    if (input.mesh && !input.offset) {
+      const siblings = [...this.entries.values()].filter((e) => e.data.mesh === input.mesh && e.data.id !== input.id).length;
+      if (siblings > 0) {
+        const target = findByName(this.opts.root, input.mesh);
+        const r = target ? new THREE.Box3().setFromObject(target).getBoundingSphere(new THREE.Sphere()).radius : 1;
+        const angle = siblings * 2.4;
+        input = { ...input, offset: [Math.cos(angle) * r * 0.45, Math.sin(angle) * r * 0.45 + r * 0.2, 0] };
+      }
+    }
+    const anchor = this.resolveAnchor(input); // throws before any DOM is touched
     const previous = this.entries.get(input.id)?.data;
     if (previous) this.remove(input.id);
 
@@ -213,7 +227,10 @@ export class HotspotManager {
             break;
           }
         }
-        if (!hidden) e.anchor = worldCenter(target, e.anchor);
+        if (!hidden) {
+          worldCenter(target, e.anchor);
+          if (e.data.offset) e.anchor.add(this.tmp.set(...e.data.offset));
+        }
       }
       this.tmp.copy(e.anchor).project(this.opts.camera);
       const behind = this.tmp.z > 1 || this.tmp.z < -1;

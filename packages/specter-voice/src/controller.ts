@@ -140,7 +140,15 @@ export function createCommandController<C>(options: CommandControllerOptions<C>)
     }
   }
 
+  /** Forget applied ops and undo history, for example after the whole scene was replaced (pack switch). */
+  function reset(): void {
+    batches.length = 0;
+    options.registry.clearHistory();
+    set({ history: [], pending: null, errors: [], notice: null });
+  }
+
   return {
+    reset,
     getState: () => state,
     subscribe(fn: () => void) {
       listeners.add(fn);
