@@ -11,6 +11,8 @@ export interface LoadModelOptions {
   signal?: AbortSignal;
   /** Fail if loading takes longer than this. Default 20 s. */
   timeoutMs?: number;
+  /** HEAD the URL first so a missing file fails fast instead of parsing an HTML fallback page. Default true. */
+  preflight?: boolean;
 }
 
 let sharedGltf: GLTFLoader | null = null;
@@ -35,6 +37,20 @@ export interface LoadedModel {
 
 /** Load a GLB/GLTF with Draco and Meshopt support. Throws ModelLoadError for any failure. */
 export async function loadGltf(url: string, opts: LoadModelOptions = {}): Promise<LoadedModel> {
+  if (opts.preflight !== false && typeof fetch !== "undefined") {
+    try {
+      const head = await fetch(url, { method: "HEAD", signal: opts.signal });
+      const type = head.headers.get("content-type") ?? "";
+      if (!head.ok || type.includes("text/html")) {
+        const err = new ModelLoadError(url, new Error(`not found (${head.status})`));
+        err.notFound = true;
+        throw err;
+      }
+    } catch (e) {
+      if (e instanceof ModelLoadError) throw e;
+      throw new ModelLoadError(url, e);
+    }
+  }
   const loader = getLoader(opts.dracoPath ?? "/draco/");
   const timeout = opts.timeoutMs ?? 20000;
   let timer: ReturnType<typeof setTimeout> | undefined;

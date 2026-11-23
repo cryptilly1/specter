@@ -9,7 +9,7 @@ import type { SpecContext } from "specter-voice";
 import { checkBudget, measureScene, type Budget, type SceneMetrics, DEFAULT_BUDGET } from "./budget";
 import { CameraPath, PathPlayer, type Keyframe, type PathPlayerEvents } from "./camera-path";
 import { disposeObject3D } from "./dispose";
-import { TargetNotFoundError } from "./errors";
+import { ModelLoadError, TargetNotFoundError } from "./errors";
 import { findByName, listTargets } from "./find";
 import { HotspotManager, injectStyles, type Hotspot } from "./hotspots";
 import { createLightingRig, createRoomEnvironment, disposeRig, loadHdriEnvironment, type EnvironmentHandle, type LightingPreset, type LightingRig } from "./lighting";
@@ -304,7 +304,7 @@ export class SpecterScene {
         const gtao = new GTAOPass(this.scene, this.camera, size.x || 512, size.y || 512);
         gtao.output = GTAOPass.OUTPUT.Default;
         composer.addPass(gtao);
-        composer.addPass(new UnrealBloomPass(new THREE.Vector2(size.x || 512, size.y || 512), 0.16, 0.6, 1.25));
+        composer.addPass(new UnrealBloomPass(new THREE.Vector2(size.x || 512, size.y || 512), 0.14, 0.6, 1.8));
         composer.addPass(new OutputPass());
         this.composer = composer;
         this.resize();
@@ -374,12 +374,13 @@ export class SpecterScene {
       return { source: "gltf" };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this.opts.onError?.(msg);
+      const quiet = e instanceof ModelLoadError && e.notFound;
+      if (!quiet) this.opts.onError?.(msg);
       this.hideLoading();
       if (o.fallback && !this.destroyed && token === this.modelToken) {
         this.setModel(o.fallback(), { fit: o.fit });
         this.modelToken = token;
-        this.toast("Couldn't load the 3D model. Showing a simplified version.");
+        if (!quiet) this.toast("Couldn't load the 3D model. Showing a simplified version.");
         return { source: "fallback", error: msg };
       }
       this.toast("Couldn't load the 3D model.");

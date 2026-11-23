@@ -17,6 +17,8 @@ export class InvalidPathError extends Error {
 }
 
 export class ModelLoadError extends Error {
+  /** True when the file simply does not exist (an optional GLB was not supplied). Callers fall back quietly. */
+  notFound = false;
   constructor(
     public readonly url: string,
     cause?: unknown,

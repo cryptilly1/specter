@@ -142,6 +142,7 @@ export const cellPack: Pack = {
   title: "Animal cell",
   blurb: "Fly through a cutaway animal cell and meet the organelles that keep it alive.",
   subject: "a 3D animal cell with labelled organelles",
+  glb: "/models/cell.glb",
   build: buildCell,
   lighting: "studio",
   background: ["#2a1a48", "#0a0714"],

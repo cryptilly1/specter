@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useReducer, useRef, useState } from "react";
-import { createSpecterRegistry, type Quality, type SpecterScene } from "specter-core";
+import { createSpecterRegistry, fetchModelConfig, type Quality, type SpecterScene } from "specter-core";
 import { CommandBar, readFlags, SpecterCanvas, Toolbar } from "specter-ui";
 import { createCommandController, decodeSpec, type CommandController } from "specter-voice";
 import { getPack, PACK_IDS, PACKS, type Pack } from "./packs";
@@ -45,20 +45,45 @@ export function App() {
     s.registerCameraPresets(next.views);
     s.setBackground(next.background);
     s.applyLighting(next.lighting);
-    if (next.glb) await s.loadModel(next.glb, { fallback: next.build, fit: false });
-    else s.setModel(next.build(), { fit: false });
-    s.setHome(next.views.overview!);
-    s.flyTo(next.views.overview!, instant ? 0 : 1.0);
-    for (const h of next.hotspots) {
+    let effective: Pack = next;
+    if (next.glb) {
+      const r = await s.loadModel(next.glb, { fallback: next.build, fit: false });
+      if (r.source === "gltf") {
+        // a real model was found: its sidecar says which mesh names to use
+        const cfg = await fetchModelConfig(next.glb.replace(/\.glb$/i, ".config.json"));
+        if (cfg?.scale) s.modelSlot.scale.setScalar(cfg.scale);
+        s.fitCameraToModel();
+        effective = {
+          ...next,
+          hotspots: (cfg?.hotspots ?? []).filter((h): h is NonNullable<typeof h> & { mesh: string } => typeof h.mesh === "string"),
+          aliases: cfg?.aliases ?? {},
+          facts: { ...next.facts, ...(cfg?.facts ?? {}) },
+          chips: cfg?.chips ?? next.chips.filter((c) => /switch to/i.test(c.text)),
+          views: { overview: s.getHome(), ...(cfg?.views ?? {}) },
+          tick: undefined,
+        };
+        s.registerCameraPresets(effective.views);
+      }
+    } else {
+      s.setModel(next.build(), { fit: false });
+    }
+    if (effective === next) {
+      s.setHome(next.views.overview!);
+      s.flyTo(next.views.overview!, instant ? 0 : 1.0);
+    } else {
+      s.setHome(effective.views.overview!);
+      s.flyTo(effective.views.overview!, instant ? 0 : 1.0);
+    }
+    for (const h of effective.hotspots) {
       try {
         s.hotspots.add({ ...h, kind: "hotspot" });
       } catch (e) {
         console.warn(`[learnforge] hotspot ${h.id} skipped: ${e instanceof Error ? e.message : e}`);
       }
     }
-    if (next.tick) tickOff.current = s.onFrame((dt) => next.tick!(s.modelSlot, dt));
-    packRef.current = next;
-    setPack(next);
+    if (effective.tick) tickOff.current = s.onFrame((dt) => effective.tick!(s.modelSlot, dt));
+    packRef.current = effective;
+    setPack(effective);
     bump();
   }, []);
 

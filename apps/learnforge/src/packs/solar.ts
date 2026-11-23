@@ -30,7 +30,7 @@ function buildSolar(): THREE.Object3D {
   root.name = "solar_system";
 
   root.add(
-    namedMesh("sun", new THREE.SphereGeometry(2.2, 64, 48), pbr("#ffb347", { roughness: 0.6, emissive: "#ff8a1f", emissiveIntensity: 1.6 }), [0, 0, 0], {
+    namedMesh("sun", new THREE.SphereGeometry(2.2, 64, 48), pbr("#ffb347", { roughness: 0.6, emissive: "#ff8a1f", emissiveIntensity: 4 }), [0, 0, 0], {
       castShadow: false,
       receiveShadow: false,
     }),

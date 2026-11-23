@@ -11,3 +11,5 @@ export * from "./scene";
 export * from "./host";
 export * from "./ops";
 export * from "./procedural";
+export * from "./model-config";
+export * from "./splat";

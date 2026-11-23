@@ -13,7 +13,9 @@
     "dev:walk": "pnpm --filter haunthouse-walk dev",
     "dev:forge": "pnpm --filter crypt-forge dev",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "models:audit": "node scripts/audit-model.mjs",
+    "models:optimize": "node scripts/optimize-model.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

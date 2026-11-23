@@ -327,3 +327,33 @@ describe("path player host", () => {
     expect(calls).toEqual([false, true]);
   });
 });
+
+describe("model loading fallbacks", () => {
+  it("falls back quietly when an optional GLB is missing (HTML fallback page)", async () => {
+    const onError = vi.fn();
+    const s = createSpecterScene(document.createElement("div"), { headless: true, onError });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html></html>", { status: 200, headers: { "content-type": "text/html" } })));
+    const r = await s.loadModel("/models/none.glb", { fallback: room });
+    expect(r.source).toBe("fallback");
+    expect(onError).not.toHaveBeenCalled();
+    expect(s.container.querySelector(".specter-toast")).toBeNull();
+    expect(listTargets(s.modelSlot)).toContain("sofa");
+    s.destroy();
+    vi.unstubAllGlobals();
+  });
+
+  it("reports and falls back when the file exists but is corrupt", async () => {
+    const onError = vi.fn();
+    const s = createSpecterScene(document.createElement("div"), { headless: true, onError });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_u: string, init?: RequestInit) => (init?.method === "HEAD" ? new Response(null, { status: 200, headers: { "content-type": "model/gltf-binary" } }) : new Response(new Uint8Array([1, 2, 3]), { status: 200 }))),
+    );
+    const r = await s.loadModel("/models/bad.glb", { fallback: room });
+    expect(r.source).toBe("fallback");
+    expect(onError).toHaveBeenCalled();
+    expect(s.container.querySelector(".specter-toast")?.textContent).toContain("simplified");
+    s.destroy();
+    vi.unstubAllGlobals();
+  });
+});
