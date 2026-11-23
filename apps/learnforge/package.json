@@ -7,9 +7,10 @@
   "scripts": {
     "predev": "node ../../scripts/copy-draco.mjs",
     "dev": "vite",
-    "prebuild": "node ../../scripts/copy-draco.mjs && node ../../scripts/copy-viewer.mjs",
+    "prebuild": "node ../../scripts/copy-draco.mjs && node ../../scripts/bundle-api.mjs && node ../../scripts/copy-viewer.mjs",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "bundle:api": "node ../../scripts/bundle-api.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
