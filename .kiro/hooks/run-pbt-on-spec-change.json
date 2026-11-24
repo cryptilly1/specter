@@ -5,7 +5,7 @@
       "name": "Run property tests when the Spec engine changes",
       "trigger": "PostFileSave",
       "description": "After applySpec, the registry, parser, hotspots, materials, dispose or camera path code is saved, run the unit and property-based tests (idempotent apply, apply+undo restores, targets resolve or fail loudly, path times increase).",
-      "matcher": "packages/specter-(voice|core|r3f)/src/.*\\.tsx?$",
+      "matcher": "packages/specter-(voice|core|r3f|library)/src/.*\\.tsx?$",
       "action": {
         "type": "command",
         "command": "pnpm vitest run packages",

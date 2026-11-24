@@ -16,5 +16,9 @@
 - [x] 14. Vercel config, bundled serverless functions, Playwright suite
 - [x] 15. Crypt Forge (crypt-forge R1-R5)
 - [x] 16. Hooks, agents, power, PBT log
-- [ ] 17. Deploy to Vercel and run the Playwright suite against the live URLs (needs `vercel login`)
+- [x] 17. Deploy to Vercel and run the Playwright suite against the live URLs
+- [x] 19. specter-library: Poly Haven, Poly Pizza, Smithsonian (CC0-checked), catalogue, Meshy (studio R1, R2)
+- [x] 20. Studio ops, parser, resolver, recipes, world (studio R1, R3, R4, R6)
+- [x] 21. Studio app: object list, add panel, properties, gizmo, play mode, save/open/export, credits (studio R2, R3, R5)
+- [ ] 22. Deploy Studio and run live tests
 - [ ] 18. Record video, write-up, submit
