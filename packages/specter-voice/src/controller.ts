@@ -2,12 +2,37 @@ import { interpret, type InterpretOptions } from "./interpret";
 import type { OpRegistry } from "./registry";
 import type { InterpretSource, Spec, SpecContext } from "./types";
 
+export interface ChoiceOption {
+  label: string;
+  detail?: string;
+  thumbnail?: string;
+  /** The op to use if this option is picked. */
+  op: Spec["ops"][number];
+}
+
+/** Alternatives for one op, e.g. other library models that matched "lantern". */
+export interface Choice {
+  opIndex: number;
+  prompt: string;
+  options: ChoiceOption[];
+  selected: number;
+}
+
+export interface ResolveResult {
+  spec: Spec;
+  choices?: Choice[];
+  /** Shown to the user, e.g. "Generating a model with Meshy…". */
+  notices?: string[];
+  errors?: string[];
+}
+
 export interface PendingCommand {
   text: string;
   spec: Spec;
   lines: string[];
   source: InterpretSource | "chip";
   warnings: string[];
+  choices?: Choice[];
 }
 
 export interface HistoryItem {
@@ -18,7 +43,7 @@ export interface HistoryItem {
   at: number;
 }
 
-export type CommandStatus = "idle" | "thinking" | "confirming" | "applying";
+export type CommandStatus = "idle" | "thinking" | "resolving" | "confirming" | "applying";
 
 export interface CommandState {
   status: CommandStatus;
@@ -37,6 +62,11 @@ export interface CommandControllerOptions<C> {
   interpretOptions?: InterpretOptions;
   /** Called after a spec is applied or undone. */
   onChange?: (applied: Spec) => void;
+  /**
+   * Optional step between interpreting and confirming: expand recipes, find library models, start generation jobs.
+   * Its output is validated again before it is shown, so a resolver can never smuggle in an unchecked op.
+   */
+  resolve?: (spec: Spec, text: string) => Promise<ResolveResult>;
 }
 
 /**
@@ -56,6 +86,30 @@ export function createCommandController<C>(options: CommandControllerOptions<C>)
   };
   const applied = (): Spec => ({ version: 1, ops: batches.flatMap((b) => b.ops) });
 
+  /** Run the resolver (if any) and re-validate. Returns null and sets errors when nothing usable is left. */
+  async function runResolve(spec: Spec, text: string): Promise<{ spec: Spec; choices?: Choice[]; notices: string[] } | null> {
+    if (!options.resolve) return { spec, notices: [] };
+    set({ status: "resolving" });
+    let res: ResolveResult;
+    try {
+      res = await options.resolve(spec, text);
+    } catch (e) {
+      set({ status: "idle", errors: [e instanceof Error ? e.message : "Could not prepare that change."] });
+      return null;
+    }
+    const notices = res.notices ?? [];
+    if (!res.spec.ops.length) {
+      set({ status: "idle", errors: res.errors ?? [], notice: notices[0] ?? null });
+      return null;
+    }
+    const checked = options.registry.parseSpec(res.spec, options.getContext());
+    if (!checked.ok) {
+      set({ status: "idle", errors: [...(res.errors ?? []), ...checked.errors], notice: notices[0] ?? null });
+      return null;
+    }
+    return { spec: checked.spec, choices: res.choices, notices: [...(res.errors ?? []), ...notices] };
+  }
+
   async function submit(text: string, o: { lang?: string; localOnly?: boolean } = {}): Promise<void> {
     set({ status: "thinking", errors: [], notice: null, pending: null });
     const outcome = await interpret(text, options.getContext(), {
@@ -68,10 +122,13 @@ export function createCommandController<C>(options: CommandControllerOptions<C>)
       set({ status: "idle", errors: outcome.errors, notice: outcome.warnings[0] ?? null });
       return;
     }
+    const resolved = await runResolve(outcome.spec, text);
+    if (!resolved) return;
+    const warnings = [...outcome.warnings, ...resolved.notices];
     set({
       status: "confirming",
-      pending: { text, spec: outcome.spec, lines: options.registry.describe(outcome.spec), source: outcome.source, warnings: outcome.warnings },
-      notice: outcome.warnings[0] ?? null,
+      pending: { text, spec: resolved.spec, lines: options.registry.describe(resolved.spec), source: outcome.source, warnings, choices: resolved.choices },
+      notice: warnings[0] ?? null,
     });
   }
 
@@ -82,11 +139,13 @@ export function createCommandController<C>(options: CommandControllerOptions<C>)
       set({ status: "idle", errors: parsed.errors });
       return;
     }
+    const resolved = await runResolve(parsed.spec, text);
+    if (!resolved) return;
     set({
       status: "confirming",
       errors: [],
-      notice: null,
-      pending: { text, spec: parsed.spec, lines: options.registry.describe(parsed.spec), source: "chip", warnings: [] },
+      notice: resolved.notices[0] ?? null,
+      pending: { text, spec: resolved.spec, lines: options.registry.describe(resolved.spec), source: "chip", warnings: resolved.notices, choices: resolved.choices },
     });
     if (o.autoApply) await confirm();
   }
@@ -112,6 +171,24 @@ export function createCommandController<C>(options: CommandControllerOptions<C>)
     }
   }
 
+  /** Pick another option for one op (for example a different library model). */
+  function choose(opIndex: number, optionIndex: number): void {
+    const p = state.pending;
+    if (!p?.choices) return;
+    const choice = p.choices.find((c) => c.opIndex === opIndex);
+    const option = choice?.options[optionIndex];
+    if (!choice || !option) return;
+    const ops = p.spec.ops.slice();
+    ops[opIndex] = option.op;
+    const checked = options.registry.parseSpec({ version: 1, ops }, options.getContext());
+    if (!checked.ok) {
+      set({ errors: checked.errors });
+      return;
+    }
+    const choices = p.choices.map((c) => (c.opIndex === opIndex ? { ...c, selected: optionIndex } : c));
+    set({ pending: { ...p, spec: checked.spec, lines: options.registry.describe(checked.spec), choices }, errors: [] });
+  }
+
   function cancel(): void {
     set({ status: "idle", pending: null, errors: [], notice: null });
   }
@@ -128,10 +205,21 @@ export function createCommandController<C>(options: CommandControllerOptions<C>)
   async function applyQuietly(spec: Spec): Promise<{ ok: boolean; errors: string[] }> {
     const parsed = options.registry.parseSpec(spec, options.getContext());
     if (!parsed.ok) return { ok: false, errors: parsed.errors };
+    let ready = parsed.spec;
+    if (options.resolve) {
+      try {
+        const r = await options.resolve(parsed.spec, "");
+        const again = options.registry.parseSpec(r.spec, options.getContext());
+        if (!again.ok) return { ok: false, errors: again.errors };
+        ready = again.spec;
+      } catch (e) {
+        return { ok: false, errors: [e instanceof Error ? e.message : "Could not prepare the shared scene"] };
+      }
+    }
     try {
-      await options.registry.apply(options.ctx, parsed.spec);
+      await options.registry.apply(options.ctx, ready);
       const id = nextId++;
-      batches.push({ id, ops: parsed.spec.ops });
+      batches.push({ id, ops: ready.ops });
       set({});
       options.onChange?.(applied());
       return { ok: true, errors: [] };
@@ -156,6 +244,7 @@ export function createCommandController<C>(options: CommandControllerOptions<C>)
     },
     submit,
     submitSpec,
+    choose,
     confirm,
     cancel,
     undo,

@@ -20,6 +20,7 @@ export interface ProviderCall {
   signal: AbortSignal;
   fetchImpl: typeof fetch;
   key: string;
+  maxTokens?: number;
 }
 
 export class ProviderError extends Error {
@@ -68,7 +69,7 @@ async function openAiStyle(url: string, c: ProviderCall, extra: Record<string, u
   const base = {
     model: c.model,
     temperature: 0.2,
-    max_tokens: 900,
+    max_tokens: c.maxTokens ?? 900,
     messages: [
       { role: "system", content: c.system },
       { role: "user", content: c.user },
@@ -112,7 +113,7 @@ export async function callProvider(c: ProviderCall): Promise<string> {
     headers: { "content-type": "application/json", "x-api-key": c.key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
       model: c.model,
-      max_tokens: 900,
+      max_tokens: c.maxTokens ?? 900,
       temperature: 0.2,
       system: c.system,
       messages: [{ role: "user", content: c.user }],

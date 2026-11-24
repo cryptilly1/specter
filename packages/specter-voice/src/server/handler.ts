@@ -4,9 +4,7 @@ import { OpRegistry } from "../registry";
 import type { Spec, SpecContext } from "../types";
 import { callProvider, keyFor, modelsFor, ProviderError, providerOrder, type ProviderName, type ServerEnv } from "./providers";
 
-const MAX_BODY_CHARS = 24_000;
-const TOTAL_DEADLINE_MS = 4500;
-const ATTEMPT_TIMEOUT_MS = 3200;
+const MAX_BODY_CHARS = 32_000;
 
 const contextSchema = z.object({
   app: z.string().max(40),
@@ -17,6 +15,10 @@ const contextSchema = z.object({
   cameraPresets: z.array(z.string().max(64)).max(30),
   aliases: z.record(z.string().max(60), z.string().max(80)).optional(),
   ops: z.array(z.string().max(32)).max(20).optional(),
+  recipes: z.array(z.object({ id: z.string().max(64), title: z.string().max(80), keywords: z.array(z.string().max(40)).max(8) })).max(40).optional(),
+  objects: z.array(z.string().max(64)).max(120).optional(),
+  libraries: z.boolean().optional(),
+  generate: z.boolean().optional(),
 });
 
 const bodySchema = z.object({
@@ -94,7 +96,11 @@ export async function handleSpecRequest(req: SpecRequest, env: ServerEnv, deps: 
   const providers = providerOrder(env);
   if (!providers.length) return { status: 503, body: { error: "No AI provider is configured" } };
 
-  const registry = deps.registry ?? new OpRegistry();
+  // Studio answers can be long (compositions of many parts), so they get more time and tokens
+  const studio = Array.isArray(context.recipes);
+  const TOTAL_DEADLINE_MS = studio ? 20_000 : 4500;
+  const ATTEMPT_TIMEOUT_MS = studio ? 14_000 : 3200;
+  const registry = deps.registry ?? new OpRegistry({ includeStudio: studio });
   const system = buildSystemPrompt(context, registry, lang);
   const user = buildUserPrompt(text);
   const fetchImpl = deps.fetchImpl ?? fetch;
@@ -117,6 +123,7 @@ export async function handleSpecRequest(req: SpecRequest, env: ServerEnv, deps: 
             signal: controller.signal,
             fetchImpl,
             key,
+            maxTokens: studio ? 3500 : 900,
           });
           const json = extractJson(reply) as { error?: unknown; ops?: unknown; version?: unknown };
           if (json && typeof json === "object" && Array.isArray(json.ops) && json.ops.length === 0) {

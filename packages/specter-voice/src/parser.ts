@@ -1,6 +1,7 @@
 import { parseColorPhrase } from "./colors";
 import { matchTarget, normalize, resolveMeshName } from "./match";
 import { OpRegistry } from "./registry";
+import { STUDIO_PARSERS } from "./studio-parser";
 import type { Spec, SpecContext } from "./types";
 
 export interface ParseOutcome {
@@ -18,8 +19,15 @@ const DEFAULT_REGISTRY = new OpRegistry();
 
 /** Split a compound command into clauses ("paint the sofa blue and add a note on the sink saying ..."). */
 export function splitClauses(text: string): string[] {
-  const verbs = "add|paint|colou?r|make|hide|show|remove|delete|go|jump|load|switch|turn|change|put|create|set|dye|tint|fly|take|look|zoom|update|edit";
+  const verbs = "add|paint|colou?r|make|hide|show|remove|delete|go|jump|load|switch|turn|change|put|create|set|dye|tint|fly|take|look|zoom|update|edit|build|move|rotate|scale|spin|duplicate|copy|place|when|whenever|stop|generate|let|have|shrink|grow|raise|lift|flip";
   const cleaned = text.replace(/\s+/g, " ").trim();
+  // "when I click the sun, show that it's a star and very hot" is one clause: only split it on ; or a full stop
+  if (/^(?:when|whenever|if|once)\b/i.test(cleaned)) {
+    return cleaned
+      .split(/\s*(?:;|\.\s+)/)
+      .map((s) => s.trim().replace(/[.!?]+$/, ""))
+      .filter(Boolean);
+  }
   const re = new RegExp(`\\s*(?:;|\\.\\s+|\\s+and then\\s+|\\s+then\\s+|\\s+also\\s+|\\s+and\\s+(?=(?:${verbs})\\b))`, "i");
   return cleaned
     .split(re)
@@ -261,7 +269,10 @@ export function parseCommand(text: string, ctx: SpecContext, registry: OpRegistr
   const clauses = splitClauses(text);
   if (!clauses.length) return { ok: false, errors: ["Say or type a command, for example: paint the sofa blue."], warnings };
 
-  const parsers = [parseHotspotAdd, parseHotspotRemove, parseHotspotUpdate, parseNote, parseNavigation, parseVisibility, parseMaterial];
+  const base = [parseHotspotAdd, parseHotspotRemove, parseHotspotUpdate, parseNote];
+  const parsers: ((c: string, x: SpecContext) => ClauseResult | null)[] = ctx.recipes
+    ? [...base, ...STUDIO_PARSERS, parseNavigation, parseVisibility, parseMaterial]
+    : [...base, parseNavigation, parseVisibility, parseMaterial];
   for (const clause of clauses) {
     let res: ClauseResult | null = null;
     for (const p of parsers) {

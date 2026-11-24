@@ -1,5 +1,6 @@
 export * from "./types";
 export * from "./ops";
+export * from "./studio-ops";
 export * from "./match";
 export * from "./colors";
 export * from "./registry";

@@ -56,7 +56,7 @@ describe("OpRegistry.parseSpec", () => {
 
   it("rejects bad colors and extra-long ops lists", () => {
     expect(r.parseSpec({ version: 1, ops: [{ op: "setMaterial", mesh: "sofa", color: "blue" }] }, ctx).ok).toBe(false);
-    const many = Array.from({ length: 20 }, () => ({ op: "setMaterial", mesh: "sofa", color: "#fff" }));
+    const many = Array.from({ length: 41 }, () => ({ op: "setMaterial", mesh: "sofa", color: "#fff" }));
     expect(r.parseSpec({ version: 1, ops: many }, ctx).ok).toBe(false);
   });
 

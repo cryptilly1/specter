@@ -19,6 +19,14 @@ export interface SpecContext {
   facts?: Record<string, string>;
   /** Op names this app supports. When omitted, every registered op is allowed. */
   ops?: string[];
+  /** Studio only: built-in recipes the user can ask for ("build a solar eclipse"). Presence switches on Studio parsing. */
+  recipes?: { id: string; title: string; keywords: string[] }[];
+  /** Studio only: top-level objects in the scene (ids). */
+  objects?: string[];
+  /** Studio only: whether free-library search is available. */
+  libraries?: boolean;
+  /** Studio only: whether AI generation (Meshy) is available. */
+  generate?: boolean;
   /** Short plain description of the subject, e.g. "a 3D animal cell". Helps the LLM write accurate copy. */
   subject?: string;
 }

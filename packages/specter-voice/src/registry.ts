@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { coreOpMeta } from "./ops";
-import { resolveMeshName } from "./match";
+import { matchTarget, normalize, resolveMeshName } from "./match";
+import { isAllowedAssetUrl } from "specter-library";
+import { namesCreatedBy, studioOpMeta } from "./studio-ops";
 import type { Spec, SpecContext, UndoFn } from "./types";
 
 export interface OpDef<C = unknown> {
@@ -26,15 +28,21 @@ export class SpecApplyError extends Error {
 
 export type ParseSpecResult = { ok: true; spec: Spec } | { ok: false; errors: string[] };
 
-const MAX_OPS = 12;
+const MAX_OPS = 40;
+
+/** Op fields that name an existing object. */
+const REF_FIELDS = ["mesh", "target", "around", "on"] as const;
 
 export class OpRegistry<C = unknown> {
   private defs = new Map<string, OpDef<C>>();
   private history: UndoFn[][] = [];
 
-  constructor(opts: { includeCore?: boolean } = {}) {
+  constructor(opts: { includeCore?: boolean; includeStudio?: boolean } = {}) {
     if (opts.includeCore !== false) {
       for (const m of coreOpMeta) this.defs.set(m.name, { name: m.name, schema: m.schema, doc: m.doc, describe: m.describe });
+    }
+    if (opts.includeStudio) {
+      for (const m of studioOpMeta) this.defs.set(m.name, { name: m.name, schema: m.schema, doc: m.doc, describe: m.describe });
     }
   }
 
@@ -80,6 +88,29 @@ export class OpRegistry<C = unknown> {
 
     const ops: Spec["ops"] = [];
     const knownHotspots = new Set(sctx?.hotspots.map((h) => h.id) ?? []);
+    // names that exist in the scene, plus names created earlier in this Spec
+    const existing = new Set((sctx?.meshes ?? []).map((m) => normalize(m)));
+    const created: string[] = [];
+    const renamed = new Map<string, string>();
+
+    const resolveRef = (raw: string): string | null => {
+      const ren = renamed.get(raw);
+      if (ren) return ren;
+      const exactCreated = created.find((c) => normalize(c) === normalize(raw));
+      if (exactCreated) return exactCreated;
+      const m = resolveMeshName(raw, sctx!);
+      if (m.id) return m.id;
+      const c = matchTarget(raw, created);
+      return c.id;
+    };
+    const uniqueName = (n: string): string => {
+      if (!existing.has(normalize(n)) && !created.some((c) => normalize(c) === normalize(n))) return n;
+      for (let k = 2; k < 500; k++) {
+        const cand = `${n}_${k}`;
+        if (!existing.has(normalize(cand)) && !created.some((c) => normalize(c) === normalize(cand))) return cand;
+      }
+      return `${n}_${Date.now() % 100000}`;
+    };
 
     r.ops.forEach((rawOp, i) => {
       const label = `op ${i + 1}`;
@@ -95,21 +126,79 @@ export class OpRegistry<C = unknown> {
       }
       const parsed = def.schema.safeParse(rawOp);
       if (!parsed.success) {
-        errors.push(`${label} (${name}): ${parsed.error.issues.map((x) => x.message).join("; ")}`);
+        errors.push(`${label} (${name}): ${parsed.error.issues.map((x) => `${x.path.length ? x.path.join(".") + ": " : ""}${x.message}`).join("; ")}`);
         return;
       }
-      const op = { ...(parsed.data as Record<string, unknown>) } as { op: string; [k: string]: unknown };
+      const op = JSON.parse(JSON.stringify(parsed.data)) as { op: string; [k: string]: unknown };
 
-      if (sctx) {
-        // canonicalise mesh target
-        if (typeof op.mesh === "string") {
-          const m = resolveMeshName(op.mesh, sctx);
-          if (!m.id) {
-            errors.push(`${label} (${name}): unknown target "${op.mesh}"${m.suggestions.length ? `. Did you mean ${m.suggestions.slice(0, 3).join(", ")}?` : ""}`);
+      // assets may only load from allowlisted hosts (share links and AI answers cannot point anywhere else)
+      const src = op.source as { type?: string; url?: string; urlMap?: Record<string, string>; parts?: { name: string; parent?: string }[] } | undefined;
+      if (name === "addObject" && src?.type === "asset") {
+        const urls = [src.url!, ...Object.values(src.urlMap ?? {})];
+        if (!urls.every((u) => isAllowedAssetUrl(u))) {
+          errors.push(`${label} (addObject): model URL is not from an allowed library`);
+          return;
+        }
+      }
+      if (name === "addObject" && src?.type === "composite") {
+        const partNames = new Set<string>();
+        for (const p of src.parts!) {
+          if (partNames.has(normalize(p.name))) {
+            errors.push(`${label} (addObject): two parts are both named "${p.name}"`);
             return;
           }
-          op.mesh = m.id;
+          partNames.add(normalize(p.name));
         }
+        for (const p of src.parts!) {
+          if (p.parent && !partNames.has(normalize(p.parent))) {
+            errors.push(`${label} (addObject): part "${p.name}" has unknown parent "${p.parent}"`);
+            return;
+          }
+        }
+      }
+
+      if (sctx) {
+        // object references: canonicalise, and reject anything that does not exist
+        const refs: [Record<string, unknown>, string][] = REF_FIELDS.map((f) => [op, f] as [Record<string, unknown>, string]);
+        if (name === "removeObject") refs.push([op, "id"]);
+        if (name === "addInteraction" && op.action && typeof op.action === "object") refs.push([op.action as Record<string, unknown>, "target"]);
+        for (const [holder, field] of refs) {
+          const v = holder[field];
+          if (typeof v !== "string") continue;
+          if (name === "addObject" && field === "id") continue;
+          const id = resolveRef(v);
+          if (!id) {
+            const sugg = [...(sctx.meshes ?? []), ...created].filter((m) => normalize(m).includes(normalize(v).split(" ")[0] ?? "")).slice(0, 3);
+            errors.push(`${label} (${name}): unknown target "${v}"${sugg.length ? `. Did you mean ${sugg.join(", ")}?` : ""}`);
+            return;
+          }
+          holder[field] = id;
+        }
+
+        // new names: rename on clash, and remember them so later ops can refer to them
+        if ((name === "addObject" || name === "addLight") && typeof op.id === "string") {
+          const fresh = uniqueName(op.id);
+          if (fresh !== op.id) renamed.set(op.id, fresh);
+          op.id = fresh;
+          created.push(fresh);
+          if (src?.type === "composite") {
+            for (const p of src.parts!) {
+              const pn = uniqueName(p.name);
+              if (pn !== p.name) {
+                renamed.set(p.name, pn);
+                for (const q of src.parts!) if (q.parent === p.name) q.parent = pn;
+                p.name = pn;
+              }
+              created.push(pn);
+            }
+          } else if (src?.type === "primitive") {
+            const part = (op.source as { part: { name: string } }).part;
+            const pn = uniqueName(part.name);
+            part.name = pn;
+            created.push(pn);
+          }
+        }
+
         if ((name === "updateHotspot" || name === "removeHotspot") && typeof op.id === "string" && !knownHotspots.has(op.id)) {
           errors.push(`${label} (${name}): unknown hotspot "${op.id}"`);
           return;
@@ -131,6 +220,8 @@ export class OpRegistry<C = unknown> {
           }
         }
         if (name === "addHotspot" && typeof op.id === "string") knownHotspots.add(op.id);
+      } else if (name === "addObject" || name === "addLight") {
+        for (const n of namesCreatedBy(op)) created.push(n);
       }
       ops.push(op);
     });
