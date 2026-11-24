@@ -225,6 +225,8 @@ importers:
         specifier: ^0.187.0
         version: 0.187.0
 
+  packages/specter-library: {}
+
   packages/specter-r3f:
     dependencies:
       specter-core:
