@@ -108,6 +108,11 @@ export class SpecterScene {
   private height = 1;
   private home: CameraView;
   private cleanups: (() => void)[] = [];
+  private pickHandlers = new Set<(hit: THREE.Object3D | null, e: PointerEvent) => boolean | void>();
+  private hoverHandlers = new Set<(hit: THREE.Object3D | null) => void>();
+  private lastHover: THREE.Object3D | null = null;
+  private hoverPending = false;
+  private extraEnv: EnvironmentHandle | null = null;
   /** Loaded model animations, if any. */
   animations: THREE.AnimationClip[] = [];
 
@@ -238,7 +243,7 @@ export class SpecterScene {
   }
 
   private applyEnvIntensity(): void {
-    this.scene.environmentIntensity = this.lighting === "night" ? 0.35 : this.lighting === "indoor" ? 0.7 : 0.9;
+    this.scene.environmentIntensity = this.lighting === "night" ? 0.35 : this.lighting === "indoor" ? 0.7 : this.lighting === "sunset" ? 0.6 : this.lighting === "daylight" ? 1.0 : 0.9;
   }
 
   setBackground(bg: string | [string, string]): void {
@@ -612,6 +617,9 @@ export class SpecterScene {
         for (let o: THREE.Object3D | null = h.object; o; o = o.parent) if (!o.visible) return false;
         return true;
       });
+      for (const handler of this.pickHandlers) {
+        if (handler(hits[0]?.object ?? null, e) === true) return;
+      }
       for (const h of hits) {
         const id = this.hotspots.pickByObject(h.object);
         if (id) {
@@ -620,12 +628,70 @@ export class SpecterScene {
         }
       }
     };
+    const move = (e: PointerEvent) => {
+      if (!this.hoverHandlers.size || this.hoverPending || e.buttons) return;
+      this.hoverPending = true;
+      requestAnimationFrame(() => {
+        this.hoverPending = false;
+        const hit = this.pickAt(e.clientX, e.clientY);
+        if (hit === this.lastHover) return;
+        this.lastHover = hit;
+        for (const h of this.hoverHandlers) h(hit);
+      });
+    };
+    const leave = () => {
+      if (this.lastHover) {
+        this.lastHover = null;
+        for (const h of this.hoverHandlers) h(null);
+      }
+    };
     el.addEventListener("pointerdown", down);
     el.addEventListener("pointerup", up);
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerleave", leave);
     this.cleanups.push(() => {
       el.removeEventListener("pointerdown", down);
       el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerleave", leave);
     });
+  }
+
+  /** First visible model object under a screen point, or null. */
+  pickAt(clientX: number, clientY: number): THREE.Object3D | null {
+    if (!this.renderer) return null;
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    this.raycaster.setFromCamera(ndc, this.camera);
+    const hits = this.raycaster.intersectObjects(this.modelSlot.children, true).filter((h) => {
+      if (h.object.userData.editorOnly && !this.modelSlot.userData.editMode) return false;
+      for (let o: THREE.Object3D | null = h.object; o; o = o.parent) if (!o.visible) return false;
+      return true;
+    });
+    return hits[0]?.object ?? null;
+  }
+
+  /** Called on a click (not a drag) with the first object hit. Return true to stop hotspot handling. */
+  onPick(fn: (hit: THREE.Object3D | null, e: PointerEvent) => boolean | void): () => void {
+    this.pickHandlers.add(fn);
+    return () => this.pickHandlers.delete(fn);
+  }
+
+  onHover(fn: (hit: THREE.Object3D | null) => void): () => void {
+    this.hoverHandlers.add(fn);
+    return () => this.hoverHandlers.delete(fn);
+  }
+
+  /** Use a loaded HDRI as lighting (and optionally as the visible sky). Pass null to go back to the built-in room. */
+  setEnvironmentTexture(handle: EnvironmentHandle | null, asBackground = false): void {
+    this.extraEnv?.dispose();
+    this.extraEnv = handle;
+    if (handle) {
+      this.scene.environment = handle.texture;
+      if (asBackground) this.scene.background = handle.texture;
+    } else {
+      this.scene.environment = this.env?.texture ?? null;
+    }
   }
 
   // ---------- ui helpers ----------
@@ -688,6 +754,10 @@ export class SpecterScene {
     this.bgTexture?.dispose();
     this.env?.dispose();
     this.env = null;
+    this.extraEnv?.dispose();
+    this.extraEnv = null;
+    this.pickHandlers.clear();
+    this.hoverHandlers.clear();
     this.scene.environment = null;
     this.scene.background = null;
     this.composer?.dispose();

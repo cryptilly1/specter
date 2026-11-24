@@ -98,6 +98,10 @@ export class OpRegistry<C = unknown> {
       if (ren) return ren;
       const exactCreated = created.find((c) => normalize(c) === normalize(raw));
       if (exactCreated) return exactCreated;
+      const exactObject = sctx!.objects?.find((c) => normalize(c) === normalize(raw));
+      if (exactObject) return exactObject;
+      const exactMesh = sctx!.meshes.find((c) => normalize(c) === normalize(raw));
+      if (exactMesh) return exactMesh;
       const m = resolveMeshName(raw, sctx!);
       if (m.id) return m.id;
       const c = matchTarget(raw, created);

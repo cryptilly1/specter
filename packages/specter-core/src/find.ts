@@ -24,7 +24,8 @@ export function listTargets(root: THREE.Object3D): string[] {
   const seen = new Set<string>();
   root.traverse((o) => {
     if (o === root || !o.name || o.userData?.specterIgnore) return;
-    if (IGNORED.test(o.name)) return;
+    // generic exporter names ("Cube", "Object_12") are skipped, but never names a user gave to a Studio object
+    if (IGNORED.test(o.name) && !o.userData.studioId) return;
     const isMesh = (o as THREE.Mesh).isMesh === true;
     let hasMesh = isMesh;
     if (!isMesh && o.children.length) {

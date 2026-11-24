@@ -214,6 +214,9 @@ importers:
       '@sparkjsdev/spark':
         specifier: ^2.4.0
         version: 2.4.0(three@0.187.0)
+      specter-library:
+        specifier: workspace:*
+        version: link:../specter-library
       specter-voice:
         specifier: workspace:*
         version: link:../specter-voice

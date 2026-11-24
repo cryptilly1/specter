@@ -3,7 +3,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
 import { disposeObject3D } from "./dispose";
 
-export type LightingPreset = "studio" | "indoor" | "night";
+export type LightingPreset = "studio" | "indoor" | "night" | "sunset" | "daylight";
 
 export interface LightingRig {
   group: THREE.Group;
@@ -34,6 +34,18 @@ export function createLightingRig(preset: LightingPreset, shadows: boolean): Lig
     const warm = new THREE.PointLight(0xffb36b, 18, 14, 2);
     warm.position.set(0, 2.4, 0);
     group.add(key, warm);
+  } else if (preset === "sunset") {
+    group.add(new THREE.HemisphereLight(0xffb27a, 0x3b2350, 0.7));
+    key = new THREE.DirectionalLight(0xff9a5a, 2.2);
+    key.position.set(-8, 3, 4);
+    const sky = new THREE.DirectionalLight(0x8a7cff, 0.5);
+    sky.position.set(6, 6, -4);
+    group.add(key, sky);
+  } else if (preset === "daylight") {
+    group.add(new THREE.HemisphereLight(0xcfe8ff, 0x6b5a45, 0.9));
+    key = new THREE.DirectionalLight(0xfff6e5, 2.8);
+    key.position.set(6, 12, 5);
+    group.add(key);
   } else {
     group.add(new THREE.HemisphereLight(0x5568a8, 0x120a1a, 0.5));
     key = new THREE.DirectionalLight(0x9fb3ff, 1.1);

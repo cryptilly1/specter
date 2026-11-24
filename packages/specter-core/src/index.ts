@@ -13,3 +13,4 @@ export * from "./ops";
 export * from "./procedural";
 export * from "./model-config";
 export * from "./splat";
+export * from "./studio";

@@ -305,6 +305,16 @@ export class HotspotManager {
     panel.hidden = false;
   }
 
+  /** Show a panel that is not tied to a hotspot marker (interactions such as "when clicked, show ..."). */
+  showMessage(title: string, body: string): void {
+    this.select(null);
+    this.renderPanel({ id: "__message", kind: "hotspot", title, body, position: [0, 0, 0] });
+  }
+
+  hideMessage(): void {
+    if (!this.activeId && this.panelEl) this.panelEl.hidden = true;
+  }
+
   clear(): void {
     this.select(null);
     for (const e of this.entries.values()) e.el.remove();

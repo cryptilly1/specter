@@ -15,7 +15,8 @@
   "dependencies": {
     "specter-voice": "workspace:*",
     "three": "^0.187.0",
-    "@sparkjsdev/spark": "^2.4.0"
+    "@sparkjsdev/spark": "^2.4.0",
+    "specter-library": "workspace:*"
   },
   "devDependencies": {
     "@types/three": "^0.187.0"

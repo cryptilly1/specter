@@ -11,7 +11,7 @@ const num = (min: number, max: number) => z.number().finite().min(min).max(max);
 const vec3 = (min: number, max: number) => z.tuple([num(min, max), num(min, max), num(min, max)]);
 const hex = z.string().trim().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
 
-export const SHAPES = ["box", "sphere", "cylinder", "cone", "torus", "ring", "plane", "capsule", "pyramid", "label", "pointLight", "spotLight"] as const;
+export const SHAPES = ["box", "sphere", "cylinder", "cone", "torus", "ring", "plane", "capsule", "pyramid", "label", "pointLight", "spotLight", "group"] as const;
 export type ShapeName = (typeof SHAPES)[number];
 
 export const partSchema = z.object({
@@ -210,7 +210,7 @@ export const studioOpMeta: CoreOpMeta[] = [
   {
     name: "addObject" as never,
     schema: addObjectSchema as never,
-    doc: '{"op":"addObject","id":"<new unique name>","source":<source>,"position":[x,y,z]?,"height":<metres>?,"on":"<object to sit on>"?,"color":"#rrggbb"?}  sources: {"type":"recipe","recipe":"<recipe id>"} | {"type":"search","query":"<thing to find in free model libraries>"} | {"type":"primitive","part":<part>} | {"type":"composite","parts":[<part>,...]} | {"type":"generate","prompt":"<description>"} (only when the user says generate). part = {"name":"<unique>","shape":"box|sphere|cylinder|cone|torus|ring|plane|capsule|pyramid|label|pointLight|spotLight","dims":{"width","height","depth","radius","tube","inner","outer","arc"}?,"position":[x,y,z]?,"rotation":[deg,deg,deg]?,"color":"#rrggbb"?,"emissive":"#rrggbb"?,"opacity":0-1?,"text":"<label text>"?,"parent":"<part name>"?}',
+    doc: '{"op":"addObject","id":"<new unique name>","source":<source>,"position":[x,y,z]?,"height":<metres>?,"on":"<object to sit on>"?,"color":"#rrggbb"?}  sources: {"type":"recipe","recipe":"<recipe id>"} | {"type":"search","query":"<thing to find in free model libraries>"} | {"type":"primitive","part":<part>} | {"type":"composite","parts":[<part>,...]} | {"type":"generate","prompt":"<description>"} (only when the user says generate). part = {"name":"<unique>","shape":"box|sphere|cylinder|cone|torus|ring|plane|capsule|pyramid|label|pointLight|spotLight|group (empty, to nest parts)","dims":{"width","height","depth","radius","tube","inner","outer","arc"}?,"position":[x,y,z]?,"rotation":[deg,deg,deg]?,"color":"#rrggbb"?,"emissive":"#rrggbb"?,"opacity":0-1?,"text":"<label text>"?,"parent":"<part name>"?}',
     describe: (o: AddObjectOp) => `Add ${nice(o.id)}: ${describeSource(o)}${o.on ? ` on ${nice(o.on)}` : ""}${o.position ? ` at ${fmt(o.position)}` : ""}`,
   },
   {

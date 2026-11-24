@@ -11,6 +11,8 @@ export interface LoadModelOptions {
   signal?: AbortSignal;
   /** Fail if loading takes longer than this. Default 20 s. */
   timeoutMs?: number;
+  /** Relative file name -> absolute URL, for multi-file glTF whose textures live elsewhere (Poly Haven). */
+  urlMap?: Record<string, string>;
   /** HEAD the URL first so a missing file fails fast instead of parsing an HTML fallback page. Default true. */
   preflight?: boolean;
 }
@@ -51,7 +53,23 @@ export async function loadGltf(url: string, opts: LoadModelOptions = {}): Promis
       throw new ModelLoadError(url, e);
     }
   }
-  const loader = getLoader(opts.dracoPath ?? "/draco/");
+  let loader = getLoader(opts.dracoPath ?? "/draco/");
+  if (opts.urlMap && Object.keys(opts.urlMap).length) {
+    const map = opts.urlMap;
+    const manager = new THREE.LoadingManager();
+    manager.setURLModifier((u) => {
+      for (const [rel, abs] of Object.entries(map)) {
+        if (u === rel || u.endsWith(`/${rel}`) || decodeURIComponent(u).endsWith(`/${rel}`)) return abs;
+      }
+      return u;
+    });
+    const l = new GLTFLoader(manager);
+    const draco = new DRACOLoader(manager);
+    draco.setDecoderPath(opts.dracoPath ?? "/draco/");
+    l.setDRACOLoader(draco);
+    l.setMeshoptDecoder(MeshoptDecoder);
+    loader = l;
+  }
   const timeout = opts.timeoutMs ?? 20000;
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {

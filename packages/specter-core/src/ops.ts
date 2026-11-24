@@ -2,6 +2,7 @@ import { OpRegistry, type UndoFn } from "specter-voice";
 import { TargetNotFoundError } from "./errors";
 import { setVisibility } from "./materials";
 import type { SpecterHost } from "./host";
+import type { StudioWorld } from "./studio/world";
 import { humanize } from "specter-voice";
 
 export interface CoreOpHooks {
@@ -9,6 +10,8 @@ export interface CoreOpHooks {
   loadPack?: (pack: string) => Promise<UndoFn | void> | UndoFn | void;
   /** Apps can intercept camera targets that are not presets or path keyframes. */
   setCamera?: (to: string | undefined, mode: "orbit" | "path" | undefined) => UndoFn | void;
+  /** Studio: build-from-empty ops (objects, transforms, copies, lights, motion, interactions, environment). */
+  studio?: StudioWorld;
 }
 
 let autoId = 0;
@@ -22,7 +25,7 @@ function genId(prefix: string, ...parts: (string | undefined)[]): string {
  * (`createCommandController({ registry, ctx: scene, ... })`).
  */
 export function createSpecterRegistry(hooks: CoreOpHooks = {}): OpRegistry<SpecterHost> {
-  const reg = new OpRegistry<SpecterHost>();
+  const reg = new OpRegistry<SpecterHost>({ includeStudio: Boolean(hooks.studio) });
 
   reg.bind("addHotspot", (scene, op) => {
     const id = op.id ?? genId("hs", op.mesh, op.title);
@@ -93,5 +96,17 @@ export function createSpecterRegistry(hooks: CoreOpHooks = {}): OpRegistry<Spect
     return hooks.loadPack(op.pack);
   });
 
+  const w = hooks.studio;
+  if (w) {
+    reg.bind("addObject", (_s, op) => w.addObject(op));
+    reg.bind("removeObject", (_s, op) => w.removeObject(op.id));
+    reg.bind("transform", (_s, op) => w.transform(op));
+    reg.bind("duplicate", (_s, op) => w.duplicate(op));
+    reg.bind("addLight", (_s, op) => w.addLight(op));
+    reg.bind("setEnvironment", (_s, op) => w.setEnvironment(op));
+    reg.bind("animate", (_s, op) => w.animate(op));
+    reg.bind("addInteraction", (_s, op) => w.addInteraction(op));
+    reg.bind("removeInteraction", (_s, op) => w.removeInteraction(op.target, op.trigger));
+  }
   return reg;
 }
