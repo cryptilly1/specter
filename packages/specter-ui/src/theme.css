@@ -105,3 +105,14 @@ button { font-family: inherit; }
   .sp-mic[data-listening="true"] { animation: none; }
   * { scroll-behavior: auto !important; }
 }
+
+/* model choices on the confirm card */
+.sp-choices { margin: 0 0 10px; }
+.sp-choice-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.sp-choice { flex: 0 0 104px; display: grid; gap: 3px; padding: 6px; border-radius: 10px; border: 1px solid var(--sp-border); background: rgba(255,255,255,0.04); color: var(--sp-text); cursor: pointer; text-align: left; font-size: 12px; }
+.sp-choice img, .sp-choice-ph { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: rgba(255,255,255,0.06); display: grid; place-items: center; color: var(--sp-muted); }
+.sp-choice-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-choice-detail { color: var(--sp-muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-choice-on { border-color: var(--sp-accent); background: rgba(255,138,76,0.14); }
+.sp-choice:focus-visible { outline: 3px solid #8ab4ff; outline-offset: 2px; }
+.sp-last { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

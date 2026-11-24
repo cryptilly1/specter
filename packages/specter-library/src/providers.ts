@@ -174,7 +174,13 @@ export async function searchSmithsonian(query: string, key: string, c: ProviderC
     entry.glbs.push(r.content);
     byPackage.set(pkg, entry);
   }
-  const packages = [...byPackage.entries()].filter(([, e]) => !isBlocked(e.title)).slice(0, c.limit + 2);
+  // the 3D file search also matches long descriptions, so require a query word in the title
+  const qWords = words(query);
+  const relevant = (title: string) => {
+    const t = ` ${title.toLowerCase().replace(/[^a-z0-9 ]+/g, " ")} `;
+    return qWords.some((w) => t.includes(` ${w}`));
+  };
+  const packages = [...byPackage.entries()].filter(([, e]) => !isBlocked(e.title) && relevant(e.title)).slice(0, c.limit + 2);
   const out: (AssetCandidate | null)[] = await Promise.all(
     packages.map(async ([pkg, e]) => {
       try {

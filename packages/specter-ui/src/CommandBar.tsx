@@ -72,13 +72,13 @@ export function CommandBar({ controller, chips = [], lang, onLangChange, chipsLo
     onApplied?.();
   };
 
-  const busy = state.status === "thinking" || state.status === "applying";
+  const busy = state.status === "thinking" || state.status === "resolving" || state.status === "applying";
   const pending = state.pending;
 
   return (
     <div className="sp-dock" data-testid="command-dock">
       <div className="sp-sr-only" role="status" aria-live="polite">
-        {state.status === "thinking" ? "Interpreting your command" : pending ? `Preview ready: ${pending.lines.join(". ")}` : ""}
+        {state.status === "thinking" ? "Interpreting your command" : state.status === "resolving" ? "Finding models" : pending ? `Preview ready: ${pending.lines.join(". ")}` : ""}
       </div>
 
       {pending && (
@@ -93,6 +93,29 @@ export function CommandBar({ controller, chips = [], lang, onLangChange, chipsLo
               <li key={i}>{l}</li>
             ))}
           </ul>
+          {pending.choices?.map((c) => (
+            <div key={c.opIndex} className="sp-choices" role="radiogroup" aria-label={c.prompt} data-testid="model-choices">
+              <div className="sp-note" style={{ marginBottom: 6 }}>{c.prompt}: pick one</div>
+              <div className="sp-choice-row">
+                {c.options.map((o, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    role="radio"
+                    aria-checked={c.selected === i}
+                    className={`sp-choice ${c.selected === i ? "sp-choice-on" : ""}`}
+                    onClick={() => controller.choose(c.opIndex, i)}
+                    title={`${o.label} · ${o.detail ?? ""}`}
+                    data-testid="model-choice"
+                  >
+                    {o.thumbnail ? <img src={o.thumbnail} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => (e.currentTarget.style.visibility = "hidden")} /> : <span className="sp-choice-ph">3D</span>}
+                    <span className="sp-choice-label">{o.label}</span>
+                    {o.detail && <span className="sp-choice-detail">{o.detail}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
           {state.notice && <div className="sp-note">{state.notice}</div>}
           <div className="sp-row">
             <button className="sp-btn sp-primary" onClick={confirm} disabled={busy} data-testid="apply-btn" autoFocus>
@@ -168,7 +191,7 @@ export function CommandBar({ controller, chips = [], lang, onLangChange, chipsLo
             </select>
           )}
           <button className="sp-btn sp-primary" type="submit" disabled={busy || !text.trim()} data-testid="send-btn">
-            {state.status === "thinking" ? "Thinking…" : "Preview"}
+            {state.status === "thinking" ? "Thinking…" : state.status === "resolving" ? "Finding…" : "Preview"}
           </button>
         </form>
         {!supported && <div className="sp-note" style={{ marginTop: 8 }}>Voice input works in Chrome. You can type commands here.</div>}
@@ -177,7 +200,12 @@ export function CommandBar({ controller, chips = [], lang, onLangChange, chipsLo
             <button className="sp-btn" onClick={() => void controller.undo()} disabled={!state.canUndo} data-testid="undo-btn">
               ↶ Undo
             </button>
-            <span>Last: {state.history[state.history.length - 1]!.lines.join("; ")}</span>
+            <span className="sp-last" title={state.history[state.history.length - 1]!.lines.join("\n")}>
+              Last: {(() => {
+                const l = state.history[state.history.length - 1]!.lines;
+                return l.length > 2 ? `${l.slice(0, 2).join("; ")} and ${l.length - 2} more` : l.join("; ");
+              })()}
+            </span>
           </div>
         )}
       </div>

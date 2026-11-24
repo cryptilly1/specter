@@ -24,7 +24,8 @@ export interface StudioResolverOptions {
 /** Typical real-world heights in metres, so a found "tree" isn't the size of a cup. */
 const TYPICAL_HEIGHT: [RegExp, number][] = [
   [/\b(skyscraper|tower|lighthouse)\b/, 20],
-  [/\b(house|building|castle|church|barn|temple)\b/, 6],
+  [/\b(castle|church|temple)\b/, 8],
+  [/\b(house|building|barn|cottage|shed)\b/, 4],
   [/\b(tree|pine|oak|palm)\b/, 4],
   [/\b(rocket|shuttle|spaceship|ship|boat)\b/, 5],
   [/\b(dinosaur|t-?rex|triceratops|elephant|giraffe|whale)\b/, 3],
@@ -112,7 +113,7 @@ export function createStudioResolver(opts: StudioResolverOptions) {
     });
   }
 
-  async function resolve(spec: Spec): Promise<ResolveResult> {
+  async function resolve(spec: Spec, text = ""): Promise<ResolveResult> {
     const out: Op[] = [];
     const choices: Choice[] = [];
     const notices: string[] = [];
@@ -143,7 +144,9 @@ export function createStudioResolver(opts: StudioResolverOptions) {
           errors.push(`I couldn't find a free model for "${query}". Try a simpler word${notes.length ? ` (${notes[0]})` : ""}, or build it from shapes.`);
           continue;
         }
-        const height = typeof op.height === "number" ? op.height : typicalHeight(query);
+        const words = `${query} ${String(op.id).replace(/_/g, " ")} ${text}`.toLowerCase();
+        const sizeFactor = /\b(tiny|miniature)\b/.test(words) ? 0.35 : /\b(small|little|mini)\b/.test(words) ? 0.5 : /\b(huge|giant|massive|enormous)\b/.test(words) ? 2.5 : /\b(big|large|tall)\b/.test(words) ? 1.6 : 1;
+        const height = typeof op.height === "number" ? op.height : Math.round(typicalHeight(query) * sizeFactor * 100) / 100;
         const withHeight = { ...op, height };
         const index = out.length;
         out.push(assetOp(withHeight, candidates[0]!));

@@ -93,6 +93,8 @@ export class StudioWorld {
   /** Edit mode: clicks select objects. Play mode: clicks run interactions. */
   mode: "edit" | "play" = "edit";
   onSelect?: (id: string | null) => void;
+  /** Return true to ignore a click (for example while the pointer is on the transform handle). */
+  pickGuard?: () => boolean;
   onChange?: () => void;
   lang: () => string = () => "en-US";
 
@@ -239,9 +241,23 @@ export class StudioWorld {
       this.putOn(object, this.find(op.on));
     } else if (op.position) {
       object.position.set(...op.position);
+      // a requested spot that lands inside something else (common with "next to it") is replaced by a free one
+      if (this.overlapsOthers(object)) this.autoPlace(object);
     } else {
       this.autoPlace(object);
     }
+  }
+
+  private overlapsOthers(object: THREE.Object3D): boolean {
+    const mine = new THREE.Box3().setFromObject(object);
+    if (mine.isEmpty()) return false;
+    mine.expandByScalar(-0.05);
+    for (const o of this.list()) {
+      if (o.object === object || !o.object.visible || o.kind === "light") continue;
+      const b = new THREE.Box3().setFromObject(o.object);
+      if (!b.isEmpty() && b.intersectsBox(mine)) return true;
+    }
+    return false;
   }
 
   /** Put new things beside what is already there instead of inside it. */
@@ -319,27 +335,23 @@ export class StudioWorld {
       const box = new THREE.Box3().setFromObject(object);
       if (!box.isEmpty()) object.scale.multiplyScalar(op.height / Math.max(1e-6, box.max.y - box.min.y));
     }
-    if (op.color) this.tint(object, op.color);
+    if (op.color) this.tint(object, op.color, src.type === "asset" ? 0.55 : 1);
     this.place(object, op);
     return this.register(op.id, kind, object, { asset });
   }
 
-  private tint(object: THREE.Object3D, color: string): void {
+  /** Tint every material. `amount` < 1 blends toward the colour, so library models keep their own shading. */
+  private tint(object: THREE.Object3D, color: string, amount = 1): void {
+    const target = new THREE.Color(color);
+    const one = (x: THREE.Material) => {
+      const y = x.clone() as THREE.MeshStandardMaterial;
+      if (y.color) amount >= 1 ? y.color.copy(target) : y.color.lerp(target, amount);
+      return y;
+    };
     object.traverse((c) => {
       const m = c as THREE.Mesh;
       if (!m.isMesh) return;
-      const mats = Array.isArray(m.material) ? m.material : [m.material];
-      m.material = Array.isArray(m.material)
-        ? mats.map((x) => {
-            const y = x.clone() as THREE.MeshStandardMaterial;
-            y.color?.set(color);
-            return y;
-          })
-        : (() => {
-            const y = mats[0]!.clone() as THREE.MeshStandardMaterial;
-            y.color?.set(color);
-            return y;
-          })();
+      m.material = Array.isArray(m.material) ? m.material.map(one) : one(m.material);
     });
   }
 
@@ -591,6 +603,7 @@ export class StudioWorld {
   }
 
   private handlePick(hit: THREE.Object3D | null): boolean {
+    if (this.pickGuard?.()) return true;
     if (this.mode === "edit") {
       const owner = this.ownerOf(hit);
       this.onSelect?.(owner?.id ?? null);

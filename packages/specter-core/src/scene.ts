@@ -408,14 +408,24 @@ export class SpecterScene {
 
   // ---------- camera ----------
 
-  fitCameraToModel(): void {
+  /** A view that frames everything in the model slot, or null when it is empty. */
+  frameView(padding = 1.4): CameraView | null {
     const box = new THREE.Box3().setFromObject(this.modelSlot);
-    if (box.isEmpty()) return;
+    if (box.isEmpty()) return null;
     const sphere = box.getBoundingSphere(new THREE.Sphere());
-    const dist = sphere.radius / Math.sin(THREE.MathUtils.degToRad(this.camera.fov / 2)) * 1.4;
+    const dist = (sphere.radius / Math.sin(THREE.MathUtils.degToRad(this.camera.fov / 2))) * padding;
     const dir = new THREE.Vector3(0.6, 0.45, 1).normalize();
     const pos = sphere.center.clone().add(dir.multiplyScalar(dist));
-    this.home = { position: [pos.x, pos.y, pos.z], target: [sphere.center.x, sphere.center.y, sphere.center.z] };
+    return { position: [pos.x, pos.y, pos.z], target: [sphere.center.x, sphere.center.y, sphere.center.z] };
+  }
+
+  fitCameraToModel(seconds = 0, padding = 1.4): void {
+    const view = this.frameView(padding);
+    if (!view) return;
+    const pos = new THREE.Vector3(...view.position);
+    const sphere = { center: new THREE.Vector3(...view.target) };
+    this.home = view;
+    if (seconds > 0 && !this.headless) return this.flyTo(this.home, seconds);
     this.camera.position.copy(pos);
     this.camera.lookAt(sphere.center);
     this.controls?.target.copy(sphere.center);

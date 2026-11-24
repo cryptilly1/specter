@@ -25,8 +25,9 @@ export function decodeSpec(
   encoded: string,
   registry: OpRegistry<any>,
   ctx?: SpecContext,
+  opts: { maxLength?: number } = {},
 ): { ok: true; spec: Spec } | { ok: false; errors: string[] } {
-  if (!encoded || encoded.length > 20000) return { ok: false, errors: ["Share link is empty or too long"] };
+  if (!encoded || encoded.length > (opts.maxLength ?? 20000)) return { ok: false, errors: ["Share link is empty or too long"] };
   try {
     const json = new TextDecoder().decode(fromBase64Url(encoded));
     return registry.parseSpec(JSON.parse(json), ctx);

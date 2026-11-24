@@ -327,3 +327,22 @@ describe("PBT: random studio sessions", () => {
     );
   }, 120000);
 });
+
+describe("placement and sizing fixes (from live AI testing)", () => {
+  it("a requested position inside another object is replaced by a free spot", async () => {
+    await run("add a big blue cube");
+    await registry.apply(scene, { version: 1, ops: [{ op: "addObject", id: "ball", source: { type: "primitive", part: { name: "ball_mesh", shape: "sphere", dims: { radius: 0.5 } } }, position: [0, 0, 0] }] });
+    const cube = new THREE.Box3().setFromObject(world.objects.get("cube")!.object);
+    const ball = new THREE.Box3().setFromObject(world.objects.get("ball")!.object);
+    expect(cube.intersectsBox(ball.expandByScalar(-0.05))).toBe(false);
+  });
+
+  it("size words scale library models", async () => {
+    const c = { provider: "polypizza", assetId: "b", title: "Barn", url: "https://static.poly.pizza/b.glb", license: { id: "CC0-1.0", label: "CC0", attributionRequired: false }, credit: "Barn", sourceUrl: "https://poly.pizza/m/b" };
+    const r = createStudioResolver({ scene, fetchImpl: vi.fn(async () => new Response(JSON.stringify({ candidates: [c] }))) as unknown as typeof fetch });
+    const small = await r.resolve({ version: 1, ops: [{ op: "addObject", id: "small_red_barn", source: { type: "search", query: "barn" } }] }, "add a small red barn");
+    expect(small.spec.ops[0]).toMatchObject({ height: 2 });
+    const big = await r.resolve({ version: 1, ops: [{ op: "addObject", id: "barn", source: { type: "search", query: "barn" } }] }, "add a huge barn");
+    expect(big.spec.ops[0]).toMatchObject({ height: 10 });
+  });
+});

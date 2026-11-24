@@ -4,7 +4,7 @@ import { specterApiPlugin } from "../../scripts/vite-spec-api";
 
 export default defineConfig({
   plugins: [react(), specterApiPlugin()],
-  server: { port: 5174, host: true },
+  server: { port: 5174, strictPort: true, host: true },
   preview: { port: 4174 },
   build: { target: "es2022", chunkSizeWarningLimit: 1500 },
 });

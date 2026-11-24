@@ -1,0 +1,35 @@
+{
+  "name": "studio",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "predev": "node ../../scripts/copy-draco.mjs",
+    "dev": "vite",
+    "prebuild": "node ../../scripts/copy-draco.mjs && node ../../scripts/bundle-api.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "bundle:api": "node ../../scripts/bundle-api.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "specter-core": "workspace:*",
+    "specter-ui": "workspace:*",
+    "specter-voice": "workspace:*",
+    "three": "^0.187.0",
+    "specter-library": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.187.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.8"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}
