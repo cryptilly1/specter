@@ -198,3 +198,14 @@ describe("command controller", () => {
     expect(c.getState().errors.length).toBeGreaterThan(0);
   });
 });
+
+describe("localOnly precedence", () => {
+  it("an app-level localOnly is not overridden when submit passes no localOnly", async () => {
+    const fetchImpl = (() => {
+      throw new Error("fetch must not be called");
+    }) as unknown as typeof fetch;
+    const c = createCommandController({ registry: makeRegistry(), ctx: { colors: {}, log: [] }, getContext: () => ctx, interpretOptions: { localOnly: true, fetchImpl } });
+    await c.submit("paint the sofa blue", { lang: "en-US" });
+    expect(c.getState().pending?.source).toBe("local");
+  });
+});

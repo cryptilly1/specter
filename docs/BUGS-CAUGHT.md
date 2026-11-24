@@ -13,3 +13,5 @@ Real failures from this build, for the Kiro write-up. Each one was found by a te
 | Screenshot review | The hotspot panel sat under the command dock. | Panel moved to the top-left. |
 | Console budget warning | Solar system had 235 draw calls (budget 200) because each asteroid was its own mesh. | Asteroid belt is now one `InstancedMesh`. |
 | Three.js r187 warning | `PCFSoftShadowMap` is removed. | Switched to `PCFShadowMap`. |
+| Playwright suite against the live apps, once the Groq key was set | `?nollm=1` (the offline switch) was ignored by the text box: the command bar always sent `localOnly: false`, overriding the app setting. Found because the live AI picked `#ffd700` for gold where the offline parser uses `#d4a017`. | The command bar only ever forces local mode, never turns it off. Unit regression test added. |
+| Live AI responses | The model added unrequested properties (`opacity: 1`), which made the see-through mitochondria shell solid. | Prompt rule: only include properties the user asked to change. |

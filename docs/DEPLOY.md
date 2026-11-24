@@ -43,6 +43,8 @@ SPECTER_CF_URL=https://specter-crypt-forge.vercel.app \
 pnpm test:e2e
 ```
 
+Add `SPECTER_LIVE_AI=1` to also run one test through the real AI with no mocking.
+
 Check the AI endpoint. Before the key is added it answers `No AI provider is configured`. After, it returns a spec:
 
 ```bash

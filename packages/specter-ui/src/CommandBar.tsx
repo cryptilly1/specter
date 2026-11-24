@@ -61,7 +61,8 @@ export function CommandBar({ controller, chips = [], lang, onLangChange, chipsLo
     if (!clean) return;
     setVoiceError(null);
     setHeard("");
-    void controller.submit(clean, { lang, localOnly: local });
+    // only force local mode; never override an app-level `localOnly` (for example ?nollm=1) with false
+    void controller.submit(clean, local ? { lang, localOnly: true } : { lang });
   };
 
   const confirm = async () => {

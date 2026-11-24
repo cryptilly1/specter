@@ -199,3 +199,17 @@ test.describe("Crypt Forge", () => {
     expect(errors).toEqual([]);
   });
 });
+
+// Opt-in: SPECTER_LIVE_AI=1 pnpm test:e2e. Uses the real /api/spec with the provider key, no mocking.
+test.describe("Live AI", () => {
+  test.skip(!process.env.SPECTER_LIVE_AI, "set SPECTER_LIVE_AI=1 to call the real AI");
+  test("a free-form sentence goes through the AI and applies", async ({ page }) => {
+    await page.goto(`${LF}/?${q}`);
+    await waitForScene(page);
+    const before = await meshColor(page, "mitochondria");
+    await preview(page, "tint the powerhouse of the cell a deep purple");
+    await expect(page.getByTestId("confirm-card")).toContainText("AI");
+    await page.getByTestId("apply-btn").click();
+    await expect.poll(() => meshColor(page, "mitochondria")).not.toBe(before);
+  });
+});
