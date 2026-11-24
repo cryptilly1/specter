@@ -5,11 +5,13 @@
 ## Specs vs vibe coding
 The project started from one spec, `.kiro/specs/specter-core`. Its EARS requirements (R1–R8) define scene lifecycle, hotspots, materials, the Spec format, the interpretation chain, camera paths, the budget and security. The design lists seven properties (P1–P7) that later became property-based tests. Each app then got its own requirements file (`learnforge`, `haunthouse-walk`, `crypt-forge`). Tasks were worked in order and checked off. The patch-ops design came out of the spec phase: a full-scene JSON would have been hard to validate, and voice needs to edit, not regenerate.
 
+Studio got its own spec (`.kiro/specs/studio`) before any code: where objects may come from, licensing duties, and atomic undo. The licensing requirements came straight from the providers' API terms.
+
 ## Steering
 Three steering files were included in every request:
 - `3d-architecture.md`: everything lives under one scene root, everything is disposed, no custom GLSL, materials are cloned before editing, and `specter-voice` must never import Three.js.
 - `performance-budget.md`: 300k triangles, 200 draw calls, 2048 px textures. The budget checker enforces these as warnings. The draw-call rule caught the asteroid belt (235 draw calls), which became one instanced mesh.
-- `voice-authoring.md`: voice only mutates Spec fields, the transcript is data, there is always a confirm step, the fallback order is fixed, and keys stay server-side.
+- `voice-authoring.md` (updated for Studio): voice may add objects only from recipes, shapes, licensed libraries on allowlisted hosts, or labelled generation, never code; credits travel with every object; voice only mutates Spec fields, the transcript is data, there is always a confirm step, the fallback order is fixed, and keys stay server-side.
 
 ## Hooks
 - **Run property tests when the Spec engine changes** (PostFileSave on `packages/specter-*/src`).

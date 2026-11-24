@@ -15,3 +15,13 @@ Real failures from this build, for the Kiro write-up. Each one was found by a te
 | Three.js r187 warning | `PCFSoftShadowMap` is removed. | Switched to `PCFShadowMap`. |
 | Playwright suite against the live apps, once the Groq key was set | `?nollm=1` (the offline switch) was ignored by the text box: the command bar always sent `localOnly: false`, overriding the app setting. Found because the live AI picked `#ffd700` for gold where the offline parser uses `#d4a017`. | The command bar only ever forces local mode, never turns it off. Unit regression test added. |
 | Live AI responses | The model added unrequested properties (`opacity: 1`), which made the see-through mitochondria shell solid. | Prompt rule: only include properties the user asked to change. |
+| Studio core tests | Objects the user named "cube" or "sphere" were skipped as generic exporter names, so "move the sphere up" moved its inner mesh instead (the same family as the first bug in this list). | Studio objects are always targetable, and an exact object name always wins over fuzzy matching. |
+| Studio parser tests | "add a triceratops" searched for "triceratop" (over-eager plural stripping). | Plurals are only singularised when a count is given ("five trees"). |
+| Studio parser tests | "put **a** lantern on the table" moved the existing lantern instead of adding one. | "put a/an …" adds; only "put the …" moves. |
+| Studio parser tests | "rotate the table 45 degrees" started a spin animation. | A turn by degrees is a one-off rotation. |
+| Live library probe | "tree" matched the catalogue Lantern because "s**tree**t lamp" contains "tree". | Whole-word matching. |
+| Live library probe | Smithsonian key rejected: it was pasted into `.env.local` with backticks around it. | Key readers strip stray quotes/backticks. |
+| Live library probe | Smithsonian's text search with a 3D filter returned no 3D records. | Search the 3D file API first, then confirm CC0 per package through Open Access. Results must contain a query word in the title (it returned mussels for "barn"). |
+| Licence check on the catalogue | Khronos "Duck" is under Sony's SCEA licence, not CC0. | Replaced with CC0 models, verified against each model's metadata.json. |
+| Live AI in the browser | "add a small red barn next to it": the AI's position put the barn inside the snowman, "small" was ignored, and the red tint wiped the model's colours. | Overlapping positions fall back to free space; size words scale models; library models are blended toward a colour instead of flattened. |
+| Dev server | The API plugin imported workspace TypeScript at config time and Node couldn't resolve it, so no app started. | Handlers load through Vite's module loader in dev, and through the bundled functions in preview. |

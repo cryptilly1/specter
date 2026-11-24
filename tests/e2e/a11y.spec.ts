@@ -5,6 +5,7 @@ const APPS = [
   { name: "LearnForge", url: process.env.SPECTER_LF_URL ?? "http://localhost:5173" },
   { name: "HauntHouse Walk", url: process.env.SPECTER_HW_URL ?? "http://localhost:5174", start: "explore-btn" },
   { name: "Crypt Forge", url: process.env.SPECTER_CF_URL ?? "http://localhost:5175" },
+  { name: "Studio", url: process.env.SPECTER_ST_URL ?? "http://localhost:5178" },
 ];
 
 for (const app of APPS) {
@@ -25,7 +26,7 @@ for (const app of APPS) {
     if (app.start) await page.getByTestId(app.start).click();
     const input = page.getByTestId("command-input");
     await input.focus();
-    await input.fill(app.name === "LearnForge" ? "hide the cell membrane" : app.name === "Crypt Forge" ? "hide the cap" : "hide the plant");
+    await input.fill(app.name === "LearnForge" ? "hide the cell membrane" : app.name === "Crypt Forge" ? "hide the cap" : app.name === "Studio" ? "add a red cube" : "hide the plant");
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("confirm-card")).toBeVisible();
     await expect(page.getByTestId("apply-btn")).toBeFocused();
