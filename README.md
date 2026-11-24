@@ -10,7 +10,7 @@ Built with [Kiro](https://kiro.dev) for Kiroween 2026, category **Skeleton Crew*
 | **HauntHouse Walk** | Guided apartment tour with room cards. Redecorate and leave notes by voice | `apps/haunthouse-walk` |
 | **Crypt Forge** | Product configurator for a lantern. Panel controls and voice produce the same Spec | `apps/crypt-forge` |
 
-Live: LearnForge `<URL>` · HauntHouse Walk `<URL>` · Crypt Forge `<URL>` · Embed demo `<LearnForge URL>/embed/`
+Live: [LearnForge](https://specter-learnforge.vercel.app) · [HauntHouse Walk](https://specter-haunthouse-walk.vercel.app) · [Crypt Forge](https://specter-crypt-forge.vercel.app) · [Embed demo](https://specter-learnforge.vercel.app/embed/)
 
 ## Who it is for
 
@@ -95,7 +95,7 @@ If a file is missing or fails to load, the app uses its procedural model. Voice 
 ## Embed
 
 ```html
-<script type="module" src="https://<learnforge-url>/embed/specter-viewer.js"></script>
+<script type="module" src="https://specter-learnforge.vercel.app/embed/specter-viewer.js"></script>
 <specter-viewer src="model.glb" hotspots='[{"mesh":"door","title":"Front door","body":"Solid oak."}]'></specter-viewer>
 ```
 

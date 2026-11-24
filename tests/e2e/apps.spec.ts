@@ -16,8 +16,9 @@ async function waitForScene(page: Page) {
 async function meshColor(page: Page, name: string): Promise<string> {
   return page.evaluate((n) => {
     const s = (window as any).__specter;
-    const obj = s.modelSlot.getObjectByName(n);
+    const obj = s?.modelSlot.getObjectByName(n);
     let hex = "";
+    if (!obj) return hex; // scene still building: let expect.poll retry
     obj.traverse((o: any) => {
       if (!hex && o.isMesh) hex = (Array.isArray(o.material) ? o.material[0] : o.material).color.getHexString();
     });
